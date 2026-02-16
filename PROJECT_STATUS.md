@@ -1,7 +1,7 @@
 # 🚀 ZERO-GRAVITY: MISSION CONTROL CENTER
-> **Status:** 🟢 ON TRACK | **Phase:** 0 (Pre-Flight) | **Day:** 0/12
+> **Status:** 🟢 ON TRACK | **Phase:** 0 ✅ → 1 (Engine) | **Day:** 0/12
 > **Sprint Start:** 2026-02-17 | **Sprint End:** 2026-02-28 | **Submission Deadline:** 2026-02-28 EOD
-> **Last Updated:** 2026-02-16 12:39 ICT
+> **Last Updated:** 2026-02-16 23:54 ICT
 
 ---
 
@@ -9,12 +9,13 @@
 
 | Metric | Value |
 |---|---|
-| **Overall Completion** | █░░░░░░░░░ **0%** |
+| **Overall Completion** | █░░░░░░░░░ **~5%** (Phase 0 ✅) |
+| **Phase 0 (Pre-Flight)** | ✅ Complete |
 | **Phase 1 (Engine)** | 0/4 Days |
 | **Phase 2 (Integration)** | 0/4 Days |
 | **Phase 3 (Shadow UI)** | 0/3 Days |
 | **Phase 4 (Launch)** | 0/1 Days |
-| **Next Milestone** | 🎯 Monorepo initialized + `Vault.cairo` deployed to Sepolia |
+| **Next Milestone** | 🎯 `Vault.cairo` implemented + deployed to Starknet Sepolia |
 | **Critical Blockers** | ⛔ None |
 | **Cost Incurred** | $0.00 |
 
@@ -34,9 +35,9 @@ Done ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 ### 🔷 PHASE 0: PRE-FLIGHT (Day 0 — Today)
 *Focus: Infrastructure scaffolding. Zero code, pure setup.*
 
-- [ ] **0.1 Monorepo Initialization**
-  - [ ] Create root `package.json` with npm workspaces (`"workspaces": ["apps/*", "packages/*"]`)
-  - [ ] Create directory structure per ARCHITECTURE §3.6:
+- [x] **0.1 Monorepo Initialization**
+  - [x] Create root `package.json` with npm workspaces (`"workspaces": ["apps/*", "packages/*"]`)
+  - [x] Create directory structure per ARCHITECTURE §3.6:
     ```
     apps/web/          apps/oracle/
     packages/contracts-starknet/
@@ -44,8 +45,8 @@ Done ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
     packages/shared/
     supabase/migrations/
     ```
-  - [ ] Add root `.gitignore` (node_modules, .env, artifacts/)
-  - [ ] Create `.env.example` with all required keys:
+  - [x] Add root `.gitignore` (node_modules, .env, artifacts/)
+  - [x] Create `.env.example` with all required keys:
     ```
     NEXT_PUBLIC_SUPABASE_URL=
     NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -55,25 +56,25 @@ Done ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
     STARKNET_RPC_URL=
     VAULT_CONTRACT_ADDRESS=
     ```
-  - [ ] Initialize Git repo, first commit: `chore: monorepo scaffold`
+  - [x] Initialize Git repo, first commit: `chore: monorepo scaffold` (`f4ce10f`)
 
-- [ ] **0.2 Service Account Setup**
-  - [ ] Create Supabase project → Record Project URL + Anon Key + Service Role Key
-  - [ ] Create Google AI Studio API Key → Record key
-  - [ ] Get Blast API key (Starknet Sepolia RPC) → Record URL
-  - [ ] Get Starknet Sepolia testnet ETH from faucet
-  - [ ] Get BCH Chipnet testnet coins from faucet
-  - [ ] Create Vercel project (linked to repo)
+- [x] **0.2 Service Account Setup**
+  - [x] Create Supabase project → Record Project URL + Anon Key + Service Role Key
+  - [x] Create Google AI Studio API Key → Record key
+  - [x] ~~Get Blast API key~~ → Migrated to **Alchemy** (Starknet Sepolia RPC)
+  - [x] Get Starknet Sepolia testnet ETH from faucet
+  - [x] Get BCH Chipnet testnet coins from faucet
+  - [x] Create Vercel project (linked to repo)
 
 > **📋 Service Registry:**
 > | Service | URL / Key | Status |
 > |---|---|---|
-> | Supabase Project | `___________________________` | ⬜ Not Created |
-> | Google AI Studio Key | `___________________________` | ⬜ Not Created |
-> | Blast API (Starknet RPC) | `___________________________` | ⬜ Not Created |
-> | Vercel Project | `___________________________` | ⬜ Not Created |
-> | Starknet Faucet ETH | Received? ⬜ | ⬜ Pending |
-> | BCH Chipnet Faucet | Received? ⬜ | ⬜ Pending |
+> | Supabase Project | *(configured in `.env`)* | ✅ Created |
+> | Google AI Studio Key | *(configured in `.env`)* | ✅ Created |
+> | Alchemy (Starknet RPC) | *(configured in `.env` — migrated from Blast)* | ✅ Created |
+> | Vercel Project | *(configured in `.env`)* | ✅ Created |
+> | Starknet Faucet ETH | Received? ✅ | ✅ Done |
+> | BCH Chipnet Faucet | Received? ✅ | ✅ Done |
 
 ---
 
@@ -497,7 +498,7 @@ Done ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 
 | Day | Date | Goal | Achieved | Blockers | Notes |
 |---|---|---|---|---|---|
-| 0 | 2026-02-16 | Pre-flight: ARCHITECTURE.md finalized | ✅ | None | Architecture v2.0.0 approved |
+| 0 | 2026-02-16 | Pre-flight: ARCHITECTURE.md finalized + Monorepo scaffold + Service accounts | ✅ | None | Architecture v2.0.0 approved. Monorepo committed (`f4ce10f`). All services configured. Blast→Alchemy migration. |
 | 1 | 2026-02-17 | Vault.cairo deployed to Sepolia | ⬜ | — | — |
 | 2 | 2026-02-18 | ShadowCard.cash compiled + deployed | ⬜ | — | — |
 | 3 | 2026-02-19 | Oracle listener catches Realtime events | ⬜ | — | — |
