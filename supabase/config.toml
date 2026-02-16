@@ -1,0 +1,17 @@
+# Supabase CLI configuration
+# Link to your project after creation:
+#   supabase link --project-ref <your-project-ref>
+
+[project]
+id = ""
+
+[api]
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+port = 54323

@@ -1,0 +1,22 @@
+{
+  "name": "zero-gravity",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Spend your Starknet vault balance at any Bitcoin Cash merchant — instantly, privately, without bridging a single token.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "oracle": "npm run dev --workspace=apps/oracle"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

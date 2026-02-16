@@ -1,0 +1,38 @@
+# ── Dependencies ──
+node_modules/
+
+# ── Environment ──
+.env
+.env.local
+.env.*.local
+
+# ── Next.js ──
+.next/
+out/
+
+# ── Build Output ──
+dist/
+*.tsbuildinfo
+
+# ── Turborepo ──
+.turbo/
+
+# ── Vercel ──
+.vercel/
+
+# ── Supabase ──
+.supabase/
+
+# ── Cairo / Scarb ──
+target/
+
+# ── CashScript Artifacts ──
+packages/contracts-bch/artifacts/
+
+# ── OS Files ──
+.DS_Store
+Thumbs.db
+
+# ── IDE ──
+.vscode/settings.json
+.idea/

@@ -1,0 +1,21 @@
+/**
+ * ═══════════════════════════════════════════════════════
+ * ZERO-GRAVITY: ShadowCard Covenant (CashScript)
+ * ═══════════════════════════════════════════════════════
+ *
+ * The Shadow Covenant holds BCH liquidity and releases it
+ * when presented with a valid Oracle attestation (checkDataSig)
+ * and user authorization (checkSig).
+ *
+ * Phase 1 (Day 2) will implement:
+ *   - Constructor: pubkey oraclePubKey, pubkey ownerPubKey
+ *   - swipe(): checkDataSig(oracleSig, oracleMessage, oraclePubKey)
+ *              + checkSig(userSig, userPubKey)
+ *   - withdraw(): checkSig(ownerSig, ownerPubKey)
+ */
+
+// pragma cashscript ^0.10.0;
+
+// contract ShadowCard(pubkey oraclePubKey, pubkey ownerPubKey) {
+//     // TODO: Phase 1 — Implement swipe() and withdraw()
+// }

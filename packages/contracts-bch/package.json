@@ -1,0 +1,12 @@
+{
+  "name": "@zero-gravity/contracts-bch",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "compile": "tsx scripts/compile.ts",
+    "deploy": "tsx scripts/deploy.ts",
+    "swipe": "tsx scripts/swipe.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
