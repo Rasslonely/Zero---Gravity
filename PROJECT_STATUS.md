@@ -1,7 +1,7 @@
 # 🚀 ZERO-GRAVITY: MISSION CONTROL CENTER
-> **Status:** 🟢 ON TRACK | **Phase:** 1 (Engine) | **Day:** 3/12
+> **Status:** 🟢 ON TRACK | **Phase:** 1 → 2 (Engine → Integration) | **Day:** 4/12
 > **Sprint Start:** 2026-02-17 | **Sprint End:** 2026-02-28 | **Submission Deadline:** 2026-02-28 EOD
-> **Last Updated:** 2026-02-17 15:13 ICT
+> **Last Updated:** 2026-02-17 15:19 ICT
 
 ---
 
@@ -9,13 +9,13 @@
 
 | Metric | Value |
 |---|---|
-| **Overall Completion** | ████░░░░░░ **~29%** (Phase 0 ✅ + Days 1-3 ✅) |
+| **Overall Completion** | ████░░░░░░ **~35%** (Phase 0 ✅ + Phase 1 ✅) |
 | **Phase 0 (Pre-Flight)** | ✅ Complete |
-| **Phase 1 (Engine)** | 3/4 Days |
+| **Phase 1 (Engine)** | ✅ 4/4 Days Complete |
 | **Phase 2 (Integration)** | 0/4 Days |
 | **Phase 3 (Shadow UI)** | 0/3 Days |
 | **Phase 4 (Launch)** | 0/1 Days |
-| **Next Milestone** | 🎯 Oracle Signer — Schnorr signing engine + signer unit tests |
+| **Next Milestone** | 🎯 Phase 2 — Supabase Schema + RLS + Gemini Flash pipeline |
 | **Critical Blockers** | ⛔ None |
 | **Cost Incurred** | $0.00 |
 
@@ -23,7 +23,7 @@
 ```
 Day  01 02 03 04 05 06 07 08 09 10 11 12
 Plan ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██
-Done ██ ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░
+Done ██ ██ ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░
 ```
 
 ---
@@ -187,25 +187,24 @@ Done ██ ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 
 #### **Day 4 — Oracle Daemon (Part 2: Signer)**
 
-- [ ] **1.11 ECDSA Signing Engine**
-  - [ ] Create `src/signer.ts`
-  - [ ] Load Oracle private key from env
-  - [ ] Implement `signAttestation(bchAddr, amount, nonce)`:
-    - [ ] Pack message: `Buffer.concat([bchAddr, amount, nonce])` (exact byte order!)
-    - [ ] Sign with `secp256k1` (Schnorr or ECDSA per BCH spec)
-    - [ ] Return `{ signature, message, publicKey }`
-  - [ ] **⚠️ ENDIANNESS WARNING:** Bitcoin uses little-endian. Test both byte orders.
+- [x] **1.11 ECDSA Signing Engine**
+  - [x] Create `src/signer.ts`
+  - [x] Load Oracle private key from env
+  - [x] Implement `signAttestation(bchAddr, amount, nonce)`:
+    - [x] Pack message: `recipientHash(20) + amountSats(8 LE) + nonce(8 LE)`
+    - [x] Sign with BCH Schnorr (`signMessageHashSchnorr` via `@bitauth/libauth`)
+    - [x] Return `{ signature, message, publicKey }`
+  - [x] **Endianness:** Little-endian confirmed, matches ShadowCard.cash parsing.
 
-- [ ] **1.12 Signer Unit Tests**
-  - [ ] `test_sign_valid`: Sign a message, verify signature with public key
-  - [ ] `test_deterministic`: Same input → same signature
-  - [ ] `test_different_nonce`: Different nonce → different signature
-  - [ ] All tests pass? ✅ / ❌
+- [x] **1.12 Signer Unit Tests** (3/3 PASSED)
+  - [x] `test_sign_valid`: Sign a message, verify signature with public key ✅
+  - [x] `test_deterministic`: Same input → same signature ✅
+  - [x] `test_different_nonce`: Different nonce → different signature ✅
 
-- [ ] **1.13 Integration: Listener → Signer**
-  - [ ] Wire `listener.ts` to call `signer.ts` on new `PENDING` swipe
-  - [ ] Update swipe status to `ATTESTED` in Supabase after signing
-  - [ ] Log full attestation payload for debugging
+- [x] **1.13 Integration: Listener → Signer**
+  - [x] Wire `listener.ts` to call `signer.ts` on new `PENDING` swipe
+  - [x] Update swipe status to `ATTESTED` in Supabase after signing
+  - [x] Log full attestation payload for debugging
 
 ---
 
@@ -511,7 +510,7 @@ Done ██ ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 | 1 | 2026-02-17 | Vault.cairo deployed to Sepolia | ✅ | WSL file caching delayed builds | Contract compiled + 4/4 tests passed. Deploy script ready (starknet.js). Scarb v2.15.2 + snforge v0.56.0 installed. |
 | 2 | 2026-02-18 | ShadowCard.cash compiled + deployed | ✅ | P2SH vs P2PKH output mismatch on first swipe attempt | ShadowCard compiled (cashc v0.12.1), deployed to Chipnet, **first swipe TX confirmed** on-chain. |
 | 3 | 2026-02-17 | Oracle listener catches Realtime events | ✅ | `ALTER DATABASE` permission denied on Supabase (fixed by removing) | Oracle daemon running. Supabase Realtime active. Migration `001_initial.sql` applied. Test swipe inserted + detected. |
-| 4 | 2026-02-20 | Oracle signer produces valid sigs | ⬜ | — | — |
+| 4 | 2026-02-17 | Oracle signer produces valid sigs | ✅ | None | BCH Schnorr signer via @bitauth/libauth. 3/3 unit tests passed. Full listener → signer → ATTESTED pipeline wired. |
 | 5 | 2026-02-21 | Supabase schema + RLS + seeded covenant | ⬜ | — | — |
 | 6 | 2026-02-22 | Gemini 3 Flash pipeline operational | ⬜ | — | — |
 | 7 | 2026-02-23 | Full loop connected (manual) | ⬜ | — | — |
