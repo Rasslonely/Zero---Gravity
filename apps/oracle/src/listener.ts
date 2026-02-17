@@ -14,15 +14,27 @@ import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import { config } from './config.js';
 
 // ── Types ───────────────────────────────────────────────
+// Matches actual columns from 001_initial.sql — swipes table
 export interface SwipePayload {
   id: string;
-  user_address: string;
-  bch_recipient: string;
-  amount_usd: number;
-  amount_bch: number;
+  user_id: string;
   nonce: number;
+  amount_usd: number;
+  amount_bch: number | null;
+  bch_recipient: string;
   status: string;
+  nl_input: string | null;
+  ai_confidence: number | null;
+  starknet_tx_hash: string;
+  starknet_block: number | null;
+  oracle_signature: string | null;
+  oracle_message: string | null;
+  attested_at: string | null;
+  bch_tx_hash: string | null;
+  bch_confirmed_at: string | null;
   created_at: string;
+  updated_at: string;
+  expires_at: string;
 }
 
 // ── Listener ────────────────────────────────────────────

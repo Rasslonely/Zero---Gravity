@@ -37,10 +37,16 @@ export const config = {
   // Oracle signing key (secp256k1 hex)
   oraclePrivateKey: requireEnv('ORACLE_PRIVATE_KEY'),
 
+  // BCH owner key (secp256k1 hex — signs user-side of covenant TX)
+  bchOwnerPrivateKey: requireEnv('BCH_OWNER_PRIVATE_KEY'),
+
   // Starknet
   starknetRpcUrl: process.env.STARKNET_RPC_URL || '',
 
   // BCH
   bchElectrumServer: process.env.BCH_ELECTRUM_SERVER || 'wss://chipnet.imaginary.cash:50004',
   covenantAddress: process.env.COVENANT_ADDRESS || '',
+
+  // Paths
+  covenantArtifactPath: resolve(__dirname, '..', '..', '..', 'packages', 'contracts-bch', 'artifacts', 'ShadowCard.json'),
 } as const;

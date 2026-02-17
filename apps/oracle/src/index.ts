@@ -9,13 +9,15 @@
  *
  * Day 3: ✅ Listener wired — logs incoming PENDING swipes
  * Day 4: ✅ Signer wired — produces attestations + updates DB
+ * Day 5: ✅ CashAddr decode — real HASH160 extraction via libauth
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { config } from './config.js';
 import { startListener } from './listener.js';
 import { signAttestation } from './signer.js';
-import { hexToBin, binToHex, hash160 } from '@bitauth/libauth';
+import { resolveRecipientHash } from './cashaddr.js';
+import { binToHex } from '@bitauth/libauth';
 
 // Initialize Supabase client for DB updates
 const supabase = createClient(config.supabaseUrl, config.supabaseServiceKey);
@@ -34,20 +36,18 @@ startListener(async (swipe) => {
   console.log('');
   console.log('⚡ ── INCOMING SWIPE ──────────────────────────────');
   console.log(`   ID:        ${swipe.id}`);
-  console.log(`   User:      ${swipe.user_address}`);
+  console.log(`   User:      ${swipe.user_id}`);
   console.log(`   Recipient: ${swipe.bch_recipient}`);
-  console.log(`   Amount:    $${swipe.amount_usd} → ${swipe.amount_bch} BCH`);
+  console.log(`   Amount:    $${swipe.amount_usd} → ${swipe.amount_bch ?? '?'} BCH`);
   console.log(`   Nonce:     ${swipe.nonce}`);
 
   try {
-    // Convert BCH recipient to HASH160 (for now, use raw bytes or a placeholder)
-    // In production, this would decode the CashAddr to get the hash
-    const recipientHashHex = swipe.bch_recipient.length === 40
-      ? swipe.bch_recipient  // Already a hex hash
-      : '0000000000000000000000000000000000000000'; // Placeholder for CashAddr decode
+    // Decode CashAddr (or raw hex hash) → 20-byte HASH160
+    const recipientHash = resolveRecipientHash(swipe.bch_recipient);
+    console.log(`   🔗 HASH160: ${binToHex(recipientHash)}`);
 
     const attestation = await signAttestation(config.oraclePrivateKey, {
-      bchRecipientHash: hexToBin(recipientHashHex),
+      bchRecipientHash: recipientHash,
       amountSatoshis: BigInt(Math.round((swipe.amount_bch || 0) * 1e8)),
       nonce: BigInt(swipe.nonce),
     });
@@ -72,6 +72,11 @@ startListener(async (swipe) => {
     } else {
       console.log(`   ✅ Status: PENDING → ATTESTED`);
     }
+
+    // TODO Day 7: Wire broadcaster here
+    // After ATTESTED, call broadcastSwipe(attestation, swipe) to:
+    //   → construct BCH TX → broadcast → update to BROADCAST → CONFIRMED
+
   } catch (err: any) {
     console.error(`   ❌ Signing failed: ${err.message}`);
 
@@ -88,4 +93,5 @@ startListener(async (swipe) => {
 
 console.log('✅ Oracle is listening for PENDING swipes...');
 console.log('   Signer: ACTIVE (BCH Schnorr via @bitauth/libauth)');
+console.log('   CashAddr: ACTIVE (libauth decoder)');
 console.log('   Press Ctrl+C to stop.');
