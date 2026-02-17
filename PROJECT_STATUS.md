@@ -1,7 +1,7 @@
 # 🚀 ZERO-GRAVITY: MISSION CONTROL CENTER
-> **Status:** 🟢 ON TRACK | **Phase:** 1 (Engine) | **Day:** 2/12
+> **Status:** 🟢 ON TRACK | **Phase:** 1 (Engine) | **Day:** 3/12
 > **Sprint Start:** 2026-02-17 | **Sprint End:** 2026-02-28 | **Submission Deadline:** 2026-02-28 EOD
-> **Last Updated:** 2026-02-18 03:31 ICT
+> **Last Updated:** 2026-02-17 15:13 ICT
 
 ---
 
@@ -9,13 +9,13 @@
 
 | Metric | Value |
 |---|---|
-| **Overall Completion** | ███░░░░░░░ **~21%** (Phase 0 ✅ + Day 1 ✅ + Day 2 ✅) |
+| **Overall Completion** | ████░░░░░░ **~29%** (Phase 0 ✅ + Days 1-3 ✅) |
 | **Phase 0 (Pre-Flight)** | ✅ Complete |
-| **Phase 1 (Engine)** | 2/4 Days |
+| **Phase 1 (Engine)** | 3/4 Days |
 | **Phase 2 (Integration)** | 0/4 Days |
 | **Phase 3 (Shadow UI)** | 0/3 Days |
 | **Phase 4 (Launch)** | 0/1 Days |
-| **Next Milestone** | 🎯 Oracle Listener — Supabase Realtime → event processing |
+| **Next Milestone** | 🎯 Oracle Signer — Schnorr signing engine + signer unit tests |
 | **Critical Blockers** | ⛔ None |
 | **Cost Incurred** | $0.00 |
 
@@ -23,7 +23,7 @@
 ```
 Day  01 02 03 04 05 06 07 08 09 10 11 12
 Plan ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██
-Done ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░
+Done ██ ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░
 ```
 
 ---
@@ -170,17 +170,18 @@ Done ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 
 #### **Day 3 — Oracle Daemon (Part 1: Listener)**
 
-- [ ] **1.9 Oracle Project Setup**
-  - [ ] Initialize `apps/oracle/` with TypeScript + `tsconfig.json`
-  - [ ] Install deps: `@supabase/supabase-js`, `starknet`, `dotenv`
-  - [ ] Create `src/config.ts` — load env vars with validation
+- [x] **1.9 Oracle Project Setup**
+  - [x] Initialize `apps/oracle/` with TypeScript + `tsconfig.json`
+  - [x] Install deps: `@supabase/supabase-js@^2.43.0`, `dotenv@^16.4.0`, `tsx@^4.7.0`
+  - [x] Create `src/config.ts` — load env vars from monorepo root with validation
 
-- [ ] **1.10 Supabase Realtime Listener**
-  - [ ] Initialize Supabase client with `service_role` key (server-side)
-  - [ ] Subscribe to `swipes` table: `INSERT` events where `status = 'PENDING'`
-  - [ ] On event received → log payload to console
-  - [ ] Handle reconnection (auto-retry on WebSocket disconnect)
-  - [ ] **TEST:** Manually insert a row into `swipes` table → Oracle logs it ✅ / ❌
+- [x] **1.10 Supabase Realtime Listener**
+  - [x] Initialize Supabase client with `service_role` key (server-side)
+  - [x] Subscribe to `swipes` table: `INSERT` events where `status = 'PENDING'`
+  - [x] On event received → log payload to console
+  - [x] Handle reconnection (auto-retry on WebSocket disconnect)
+  - [x] Applied `001_initial.sql` migration to Supabase (fixed `ALTER DATABASE` permission)
+  - [x] **TEST:** Inserted test PENDING swipe → Oracle detected it ✅
 
 ---
 
@@ -509,7 +510,7 @@ Done ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 | 0 | 2026-02-16 | Pre-flight: ARCHITECTURE.md finalized + Monorepo scaffold + Service accounts | ✅ | None | Architecture v2.0.0 approved. Monorepo committed (`f4ce10f`). All services configured. Blast→Alchemy migration. |
 | 1 | 2026-02-17 | Vault.cairo deployed to Sepolia | ✅ | WSL file caching delayed builds | Contract compiled + 4/4 tests passed. Deploy script ready (starknet.js). Scarb v2.15.2 + snforge v0.56.0 installed. |
 | 2 | 2026-02-18 | ShadowCard.cash compiled + deployed | ✅ | P2SH vs P2PKH output mismatch on first swipe attempt | ShadowCard compiled (cashc v0.12.1), deployed to Chipnet, **first swipe TX confirmed** on-chain. |
-| 3 | 2026-02-19 | Oracle listener catches Realtime events | ⬜ | — | — |
+| 3 | 2026-02-17 | Oracle listener catches Realtime events | ✅ | `ALTER DATABASE` permission denied on Supabase (fixed by removing) | Oracle daemon running. Supabase Realtime active. Migration `001_initial.sql` applied. Test swipe inserted + detected. |
 | 4 | 2026-02-20 | Oracle signer produces valid sigs | ⬜ | — | — |
 | 5 | 2026-02-21 | Supabase schema + RLS + seeded covenant | ⬜ | — | — |
 | 6 | 2026-02-22 | Gemini 3 Flash pipeline operational | ⬜ | — | — |

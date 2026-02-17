@@ -6,7 +6,7 @@
 -- =============================================================
 
 -- Enable RLS globally
-ALTER DATABASE postgres SET "app.jwt_claims" TO '';
+-- Note: Supabase manages JWT claims internally. No ALTER DATABASE needed.
 
 -- ENUM TYPES
 CREATE TYPE swipe_status AS ENUM (
