@@ -10,12 +10,14 @@
     "migrate": "node --import tsx/esm scripts/apply-migration.ts",
     "test:listener": "node --import tsx/esm scripts/test-listener.ts",
     "test": "node --import tsx/esm --test test/signer.test.ts",
+    "test:ai": "node --import tsx/esm scripts/test-ai-pipeline.ts",
     "verify-schema": "node --import tsx/esm scripts/verify-schema.ts",
     "seed-liquidity": "node --import tsx/esm scripts/seed-liquidity.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
     "@bitauth/libauth": "^3.0.0",
+    "@google/generative-ai": "^0.21.0",
     "cashscript": "^0.12.0",
     "dotenv": "^16.4.0"
   },

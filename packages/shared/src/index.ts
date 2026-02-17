@@ -4,4 +4,5 @@
 
 export * from './types.js';
 export * from './constants.js';
-// export * from './schemas.js'; // Uncomment in Phase 2 after Zod is installed
+export * from './schemas.js';
+export * from './sanitizer.js';
