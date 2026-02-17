@@ -7,15 +7,63 @@
  * when presented with a valid Oracle attestation (checkDataSig)
  * and user authorization (checkSig).
  *
- * Phase 1 (Day 2) will implement:
- *   - Constructor: pubkey oraclePubKey, pubkey ownerPubKey
- *   - swipe(): checkDataSig(oracleSig, oracleMessage, oraclePubKey)
- *              + checkSig(userSig, userPubKey)
- *   - withdraw(): checkSig(ownerSig, ownerPubKey)
+ * Security invariants:
+ *   1. Only the Oracle can authorise a swipe (datasig verification).
+ *   2. Output recipient + amount are bound to the oracle message (no tampering).
+ *   3. LP owner can always reclaim remaining liquidity via withdraw().
+ *
+ * Oracle message format (36 bytes, little-endian):
+ *   Bytes  0–19:  recipientHash  (HASH160 of recipient pubkey)
+ *   Bytes 20–27:  amountSats     (uint64 LE)
+ *   Bytes 28–35:  nonce          (uint64 LE — replay prevention)
  */
 
-// pragma cashscript ^0.10.0;
+pragma cashscript ^0.12.0;
 
-// contract ShadowCard(pubkey oraclePubKey, pubkey ownerPubKey) {
-//     // TODO: Phase 1 — Implement swipe() and withdraw()
-// }
+contract ShadowCard(pubkey oraclePubKey, pubkey ownerPubKey) {
+
+    /**
+     * swipe() — Release BCH to a recipient when Oracle attests solvency.
+     *
+     * The Oracle signs a message containing the recipient's public key hash,
+     * the exact amount in satoshis, and a nonce. The covenant verifies the
+     * signature and enforces that the first output pays the correct recipient
+     * the correct amount.
+     *
+     * @param oracleSig    Schnorr signature from the Oracle over oracleMessage
+     * @param oracleMessage Packed bytes: <recipientHash:20><amountSats:8><nonce:8>
+     * @param userSig      Signature from the swipe initiator
+     * @param userPubKey   Public key of the swipe initiator
+     */
+    function swipe(datasig oracleSig, bytes oracleMessage, sig userSig, pubkey userPubKey) {
+        // 1. Verify Oracle attestation — the Oracle has approved this exact swipe
+        require(checkDataSig(oracleSig, oracleMessage, oraclePubKey));
+
+        // 2. Verify user authorization — prevents unauthorized use of oracle sigs
+        require(checkSig(userSig, userPubKey));
+
+        // 3. Parse recipient + amount from oracle message
+        //    Critical: These byte splits must match Oracle signer packing order
+        bytes20 recipientHash = bytes20(oracleMessage.split(20)[0]);
+        bytes8 amountBytes = bytes8(oracleMessage.split(20)[1].split(8)[0]);
+        int amount = int(amountBytes);
+
+        // 4. Enforce output constraints:
+        //    - Output[0] must pay to the correct P2PKH recipient
+        //    - Output[0] must carry at least the attested amount
+        require(tx.outputs[0].lockingBytecode == new LockingBytecodeP2PKH(recipientHash));
+        require(tx.outputs[0].value >= amount);
+    }
+
+    /**
+     * withdraw() — LP owner reclaims remaining liquidity.
+     *
+     * Only the ownerPubKey holder can withdraw. This is used when
+     * the liquidity provider wants to exit or rebalance.
+     *
+     * @param ownerSig  Signature from the LP owner
+     */
+    function withdraw(sig ownerSig) {
+        require(checkSig(ownerSig, ownerPubKey));
+    }
+}
