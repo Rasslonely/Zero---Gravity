@@ -147,23 +147,24 @@ Done ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
   - [x] Verify `artifacts/ShadowCard.json` generated successfully (cashc v0.12.1)
   - [x] Bytecode verified: `OP_CHECKDATASIGVERIFY`, `OP_CHECKSIGVERIFY`, P2PKH enforcement
 
-- [ ] **1.8 Deploy to BCH Chipnet** *(pending env vars)*
+- [x] **1.8 Deploy to BCH Chipnet** ✅
   - [x] Write `scripts/deploy.ts` — derives keys, prints covenant address
   - [x] Write `scripts/swipe.ts` — BCH Schnorr datasig + TransactionBuilder API
-  - [ ] Set `ORACLE_PRIVATE_KEY` + `BCH_OWNER_PRIVATE_KEY` in `.env`
-  - [ ] Execute `npm run deploy` + fund via faucet
-  - [ ] **Record deployment:**
+  - [x] Set `ORACLE_PRIVATE_KEY` + `BCH_OWNER_PRIVATE_KEY` in `.env`
+  - [x] Execute `npm run deploy`
+  - [x] **Deployment recorded:**
 
 > **📋 BCH Deployment Registry:**
 > | Item | Value |
 > |---|---|
 > | Network | Chipnet (Testnet) |
-> | Covenant Address | `pending deployment` |
-> | Oracle Public Key | `pending deployment` |
-> | Owner Public Key | `pending deployment` |
-> | Seed TX Hash | `pending deployment` |
+> | Covenant Address | `bchtest:p0rcmcclq2uz5qvk0h6wlmrjj4zrtvz3qsucm7txe5jzh8d9x25dwms0hqfqf` |
+> | Oracle Public Key | `0326eeb60d9a3865d8881639d84a94f672932e4b3fabb3892888324c04c002b081` |
+> | Owner Public Key | `03a0003895f24ac97c6b9c8fe3841589b9f83182a0525a2a7732ccdf9f88b80afa` |
+> | Seed TX Hash | pending faucet funding |
+> | First Swipe TX | [`7f0aa65ebb0371a292df23f9c4b85f4195e854fb22ad13e99472f6f001df88af`](https://chipnet.imaginary.cash/tx/7f0aa65ebb0371a292df23f9c4b85f4195e854fb22ad13e99472f6f001df88af) |
 > | Seed Amount | 0.1 tBCH |
-> | Block Explorer | `pending deployment` |
+> | Block Explorer | [View on Chipnet](https://chipnet.imaginary.cash/address/bchtest:p0rcmcclq2uz5qvk0h6wlmrjj4zrtvz3qsucm7txe5jzh8d9x25dwms0hqfqf) |
 
 ---
 
@@ -507,7 +508,7 @@ Done ██ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ░�
 |---|---|---|---|---|---|
 | 0 | 2026-02-16 | Pre-flight: ARCHITECTURE.md finalized + Monorepo scaffold + Service accounts | ✅ | None | Architecture v2.0.0 approved. Monorepo committed (`f4ce10f`). All services configured. Blast→Alchemy migration. |
 | 1 | 2026-02-17 | Vault.cairo deployed to Sepolia | ✅ | WSL file caching delayed builds | Contract compiled + 4/4 tests passed. Deploy script ready (starknet.js). Scarb v2.15.2 + snforge v0.56.0 installed. |
-| 2 | 2026-02-18 | ShadowCard.cash compiled + deployed | ✅ | ESM/CJS conflicts with cashscript→libauth top-level await | ShadowCard.cash compiled (cashc v0.12.1). Deploy + swipe scripts ready. Used cashc CLI to bypass esbuild ESM issue. All crypto via @bitauth/libauth. |
+| 2 | 2026-02-18 | ShadowCard.cash compiled + deployed | ✅ | P2SH vs P2PKH output mismatch on first swipe attempt | ShadowCard compiled (cashc v0.12.1), deployed to Chipnet, **first swipe TX confirmed** on-chain. |
 | 3 | 2026-02-19 | Oracle listener catches Realtime events | ⬜ | — | — |
 | 4 | 2026-02-20 | Oracle signer produces valid sigs | ⬜ | — | — |
 | 5 | 2026-02-21 | Supabase schema + RLS + seeded covenant | ⬜ | — | — |

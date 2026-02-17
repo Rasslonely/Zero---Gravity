@@ -17,7 +17,7 @@
  *   # or: npx tsx scripts/deploy.ts
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import {
   Contract,
   ElectrumNetworkProvider,
@@ -29,6 +29,9 @@ import { instantiateSecp256k1, hexToBin, binToHex } from '@bitauth/libauth';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load .env from monorepo root (3 levels up from scripts/)
+dotenv.config({ path: resolve(__dirname, '..', '..', '..', '.env') });
 
 // ── Config ──────────────────────────────────────────────
 function requireEnv(key: string): string {

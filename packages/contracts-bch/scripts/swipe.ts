@@ -17,7 +17,7 @@
  *   # or: npx tsx scripts/swipe.ts
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import {
   Contract,
   ElectrumNetworkProvider,
@@ -37,6 +37,9 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load .env from monorepo root (3 levels up from scripts/)
+dotenv.config({ path: resolve(__dirname, '..', '..', '..', '.env') });
 
 // ── Config ──────────────────────────────────────────────
 function requireEnv(key: string): string {
@@ -146,9 +149,19 @@ async function main() {
     )
   );
 
-  // Add output to covenant address (send back for test — preserving liquidity)
+  // Output MUST be P2PKH matching recipientHash (the covenant enforces this!)
+  // P2PKH lockingBytecode = OP_DUP OP_HASH160 <20-byte hash> OP_EQUALVERIFY OP_CHECKSIG
+  // = 76a914 + recipientHash(20 bytes) + 88ac
+  const p2pkhLockingBytecode = new Uint8Array(25);
+  p2pkhLockingBytecode[0] = 0x76; // OP_DUP
+  p2pkhLockingBytecode[1] = 0xa9; // OP_HASH160
+  p2pkhLockingBytecode[2] = 0x14; // PUSH 20 bytes
+  p2pkhLockingBytecode.set(recipientHash, 3);
+  p2pkhLockingBytecode[23] = 0x88; // OP_EQUALVERIFY
+  p2pkhLockingBytecode[24] = 0xac; // OP_CHECKSIG
+
   txBuilder.addOutput({
-    to: contract.address,
+    to: p2pkhLockingBytecode,
     amount: amountSats,
   });
 
