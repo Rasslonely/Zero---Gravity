@@ -518,7 +518,7 @@ Done ██ ██ ██ ██ ██ ██ ░░ ░░ ░░ ░░ ░�
 | 3 | 2026-02-17 | Oracle listener catches Realtime events | ✅ | `ALTER DATABASE` permission denied on Supabase (fixed by removing) | Oracle daemon running. Supabase Realtime active. Migration `001_initial.sql` applied. Test swipe inserted + detected. |
 | 4 | 2026-02-17 | Oracle signer produces valid sigs | ✅ | None | BCH Schnorr signer via @bitauth/libauth. 3/3 unit tests passed. Full listener → signer → ATTESTED pipeline wired. |
 | 5 | 2026-02-17 | Supabase schema + RLS + seeded covenant | ✅ | `VARCHAR(54)` too short for P2SH32 CashAddr (fixed: migration 002) | Schema verified 13/13. LP seeded 0.01015 BCH. CashAddr decoder built. SwipePayload fixed. Signer regression 3/3. |
-| 6 | 2026-02-22 | Gemini 3 Flash pipeline operational | ✅ | Timed out on API key (fixed by user) | Sanitizer, Gemini client, API route, Zod schemas complete. Pipeline verified (partially). |
+| 6 | 2026-02-22 | Gemini 3 Flash pipeline operational | ✅ | Rate Limit (20 RPD) on Gemini 3 Preview | **Solved via Waterfall Strategy:** Primary = Gemini 3 Flash, Fallback = Gemini 2.5 Flash. Pipeline passed 10/10 tests. |
 | 7 | 2026-02-23 | Full loop connected (manual) | ⬜ | — | — |
 | 8 | 2026-02-24 | 🏆 FIRST SUCCESSFUL SWIPE | ⬜ | — | — |
 | 9 | 2026-02-25 | Next.js skeleton + layout | ⬜ | — | — |

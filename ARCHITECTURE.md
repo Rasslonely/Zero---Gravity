@@ -144,7 +144,7 @@ sequenceDiagram
 
 | Component | Role | Chain | Tech |
 |---|---|---|---|
-| **🧠 NL Transaction Engine** | Parses human language into structured swipe intents | Off-chain | Gemini 3 Flash |
+| **🧠 NL Transaction Engine** | Parses human language into structured swipe intents | Off-chain | Gemini 3 Flash (Primary) / Gemini 2.5 Flash (Fallback) |
 | **📦 Vault Engine** | Holds deposits, locks funds, emits solvency proofs | Starknet | Cairo 2.x |
 | **🔮 Shadow Oracle** | Listens for events, verifies solvency, signs attestations | Off-chain | Node.js/TS |
 | **📜 Shadow Covenant** | Holds BCH liquidity, verifies oracle sigs, releases funds | Bitcoin Cash | CashScript |
@@ -208,6 +208,12 @@ sequenceDiagram
 
 > [!IMPORTANT]
 > **Gemini 3 Flash is the only model that offers free-tier access with sub-200ms latency and native JSON output.** This is a hackathon — paying for API calls is unacceptable.
+>
+> **Reliability Strategy (The Waterfall):**
+> Gemini 3 Flash Preview has a strict rate limit (20 requests/day). To ensure 100% uptime:
+> 1. **Primary:** Try `gemini-3-flash-preview` (Smartest/Fastest).
+> 2. **Fallback:** If 429 quota exceeded, switch to `gemini-2.5-flash` (High Availability).
+> 3. **Rotation:** Both models rotate through 3 API keys to maximize throughput.
 
 #### NL Parse Flow
 
