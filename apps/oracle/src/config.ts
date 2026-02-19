@@ -29,13 +29,6 @@ function requireEnv(key: string): string {
 }
 
 // ── Exported Config ─────────────────────────────────────
-const oraclePrivateKey = requireEnv('ORACLE_PRIVATE_KEY');
-const bchOwnerPrivateKey = requireEnv('BCH_OWNER_PRIVATE_KEY');
-
-console.log('--- CONFIG DEBUG ---');
-console.log(`ORACLE_KEY: ${oraclePrivateKey.substring(0, 6)}...`);
-console.log(`BCH_OWNER_KEY: ${bchOwnerPrivateKey.substring(0, 6)}...`);
-console.log('--------------------');
 
 export const config = {
   // Supabase

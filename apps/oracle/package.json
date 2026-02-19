@@ -14,7 +14,8 @@
     "verify-schema": "node --import tsx/esm scripts/verify-schema.ts",
     "seed-liquidity": "node --import tsx/esm scripts/seed-liquidity.ts",
     "check-swipes": "node --import tsx/esm scripts/check-swipes.ts > check_output.txt 2>&1",
-    "test-broadcast": "node --import tsx/esm scripts/test-broadcast.ts"
+    "test-broadcast": "node --import tsx/esm scripts/test-broadcast.ts",
+    "test:e2e": "node --import tsx/esm scripts/e2e-swipe.ts"
   },
   "dependencies": {
     "@bitauth/libauth": "^3.0.0",
