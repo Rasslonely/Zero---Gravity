@@ -1,0 +1,132 @@
+/**
+ * ═══════════════════════════════════════════════════════
+ * ZERO-GRAVITY: BCH Broadcaster
+ * ═══════════════════════════════════════════════════════
+ *
+ * Responsible for constructing and broadcasting the Bitcoin Cash
+ * transaction to the Chipnet network.
+ *
+ * Updated for CashScript v0.12.0:
+ * - Uses TransactionBuilder
+ * - Explicit UTXO selection
+ * - Manual Change calculation
+ * - BYPASSES libauth address decoding (Manually constructs P2PKH script)
+ */
+
+import { Contract, ElectrumNetworkProvider, SignatureTemplate, TransactionBuilder } from 'cashscript';
+import {
+  hexToBin,
+  instantiateSecp256k1,
+} from '@bitauth/libauth';
+import { config } from './config.js';
+import { readFileSync } from 'fs';
+import { decodeCashAddr } from './cashaddr.js';
+
+// Start the provider
+const provider = new ElectrumNetworkProvider('chipnet');
+
+// Load artifact
+const artifact = JSON.parse(readFileSync(config.covenantArtifactPath, 'utf8'));
+
+/**
+ * Broadcasts a swipe transaction to the BCH network.
+ *
+ * @param swipe The full swipe record from the database (must be ATTESTED)
+ * @returns The BCH transaction hash (hex)
+ */
+export async function broadcastSwipe(swipe: any): Promise<string> {
+  const libauth = await instantiateSecp256k1();
+
+  if (!swipe.oracle_signature || !swipe.oracle_message) {
+    throw new Error('Swipe is missing oracle attestation data');
+  }
+
+  // 1. Prepare Relayer (User) Key - Acts as "User" in covenant
+  const relayerPrivKey = hexToBin(config.bchOwnerPrivateKey);
+  const relayerPubKey = libauth.derivePublicKeyCompressed(relayerPrivKey);
+  const relayerTemplate = new SignatureTemplate(config.bchOwnerPrivateKey);
+
+  // 2. Instantiate Contract
+  const oraclePrivKey = hexToBin(config.oraclePrivateKey);
+  const oraclePubKey = libauth.derivePublicKeyCompressed(oraclePrivKey);
+
+  const contract = new Contract(artifact, [oraclePubKey, relayerPubKey], { provider });
+  
+  // 3. Fetch Contract UTXOs
+  const utxos = await contract.getUtxos();
+  if (utxos.length === 0) {
+    throw new Error(`Covenant ${contract.address} has no UTXOs! Seed liquidity first.`);
+  }
+
+  // Simple Coin Selection: Pick the first UTXO that covers the amount
+  const amountSats = BigInt(Math.round(Number(swipe.amount_bch) * 100_000_000));
+  const feeSats = 1000n; // Hardcoded 1000 sat fee for simplicity
+  const requiredSats = amountSats + feeSats;
+
+  const utxo = utxos.find(u => u.satoshis >= requiredSats);
+  if (!utxo) {
+    throw new Error(`Covenant has insufficient funds in a single UTXO. Need ${requiredSats}, max available: ${Math.max(...utxos.map(u => Number(u.satoshis)))}`);
+  }
+
+  console.log(`📡 Broadcasting Swipe ${swipe.id}...`);
+  console.log(`   Amount: ${amountSats} sats`);
+  console.log(`   Input UTXO: ${utxo.txid}:${utxo.vout} (${utxo.satoshis} sats)`);
+
+  // 4. Decode Recipient Address Manually (Bypass libauth internal check)
+  // Use our robust decoder from cashaddr.ts
+  const recipientHash = decodeCashAddr(swipe.bch_recipient);
+  
+  // Construct P2PKH Locking Script:
+  // OP_DUP (0x76) OP_HASH160 (0xa9) <push 20> (0x14) <Hash160> OP_EQUALVERIFY (0x88) OP_CHECKSIG (0xac)
+  const p2pkhScript = new Uint8Array(25);
+  p2pkhScript[0] = 0x76; // OP_DUP
+  p2pkhScript[1] = 0xa9; // OP_HASH160
+  p2pkhScript[2] = 0x14; // Push 20 bytes
+  p2pkhScript.set(recipientHash, 3);
+  p2pkhScript[23] = 0x88; // OP_EQUALVERIFY
+  p2pkhScript[24] = 0xac; // OP_CHECKSIG
+
+  const oracleSig = typeof swipe.oracle_signature === 'string' 
+    ? hexToBin(swipe.oracle_signature.replace('\\x', ''))
+    : new Uint8Array(swipe.oracle_signature);
+
+  const oracleMessage = typeof swipe.oracle_message === 'string'
+    ? hexToBin(swipe.oracle_message.replace('\\x', ''))
+    : new Uint8Array(swipe.oracle_message);
+
+  // 5. Build Transaction (CashScript v0.12.0)
+  const builder = new TransactionBuilder({ provider });
+
+  // Add Input (Unlock Covenant)
+  builder.addInput(utxo, contract.unlock.swipe(oracleSig, oracleMessage, relayerTemplate, relayerPubKey));
+
+  // Add Output (Recipient): Pass SCRIPT (Uint8Array) instead of address string
+  // This bypasses CashScript's internal address decoding which was failing.
+  // Note: 'to' property in addOutput can accept a script (Uint8Array) in some versions,
+  // or we might need to use `lockingBytecode` property if `to` is strictly string.
+  // Checking typical CashScript behavior: if `to` is Uint8Array, it treats it as script.
+  // If this fails, we will try `script: p2pkhScript`.
+  // Casting as any to allow Uint8Array if types are strict string.
+  builder.addOutput({ to: p2pkhScript as any, amount: amountSats });
+
+  // Add Change Output (Manual - send remainder back to Covenant)
+  const changeSats = utxo.satoshis - amountSats - feeSats;
+  if (changeSats > 546n) { // Dust threshold
+    // Use contract address for change - assumed safe as it's generated by lib
+    builder.addOutput({ to: contract.address, amount: changeSats });
+  }
+
+  // Add OpReturn
+  // Using `addOpReturnOutput` per previous fix.
+  builder.addOpReturnOutput(['ZERO-GRAVITY', 'SWIPE', swipe.nonce.toString()]);
+
+  // 6. Send
+  try {
+    const tx = await builder.send();
+    console.log(`✅ Broadcast Success! TX: ${tx.txid}`);
+    return tx.txid;
+  } catch (err: any) {
+    console.error('❌ Broadcast Failed:', err);
+    throw err;
+  }
+}

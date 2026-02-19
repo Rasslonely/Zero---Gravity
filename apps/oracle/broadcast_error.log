@@ -1,0 +1,13 @@
+[2026-02-19T08:51:25.504Z] Swipe e7b967bc-511b-4ab8-b530-6dc89f5b40d2 Broadcast Error: CashAddress decoding error: the payload contains unexpected characters. Invalid characters: b, 1.
+Stack: Error: CashAddress decoding error: the payload contains unexpected characters. Invalid characters: b, 1.
+    at addressToLockScript (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:205:15)
+    at cashScriptOutputToLibauthOutput (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:51:58)
+    at encodeOutput (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:39:36)
+    at getOutputSize (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:35:27)
+    at calculateDust (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:29:24)
+    at validateOutput (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/utils.js:15:27)
+    at Array.forEach (<anonymous>)
+    at TransactionBuilder.addOutputs (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/TransactionBuilder.js:40:17)
+    at TransactionBuilder.addOutput (file:///C:/rass_code/Projects/Zero%20-%20Gravity/node_modules/cashscript/dist/TransactionBuilder.js:37:21)
+    at broadcastSwipe (C:\rass_code\Projects\Zero - Gravity\apps\oracle\src\broadcaster.ts:92:11)
+

@@ -12,7 +12,9 @@
     "test": "node --import tsx/esm --test test/signer.test.ts",
     "test:ai": "node --import tsx/esm scripts/test-ai-pipeline.ts",
     "verify-schema": "node --import tsx/esm scripts/verify-schema.ts",
-    "seed-liquidity": "node --import tsx/esm scripts/seed-liquidity.ts"
+    "seed-liquidity": "node --import tsx/esm scripts/seed-liquidity.ts",
+    "check-swipes": "node --import tsx/esm scripts/check-swipes.ts > check_output.txt 2>&1",
+    "test-broadcast": "node --import tsx/esm scripts/test-broadcast.ts"
   },
   "dependencies": {
     "@bitauth/libauth": "^3.0.0",

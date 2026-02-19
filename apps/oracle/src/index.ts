@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from './config.js';
 import { startListener } from './listener.js';
 import { signAttestation } from './signer.js';
+import { broadcastSwipe } from './broadcaster.js';
 import { resolveRecipientHash } from './cashaddr.js';
 import { binToHex } from '@bitauth/libauth';
 
@@ -73,9 +74,53 @@ startListener(async (swipe) => {
       console.log(`   ✅ Status: PENDING → ATTESTED`);
     }
 
-    // TODO Day 7: Wire broadcaster here
-    // After ATTESTED, call broadcastSwipe(attestation, swipe) to:
-    //   → construct BCH TX → broadcast → update to BROADCAST → CONFIRMED
+    // 🚀 Day 7: Broadcaster Integration
+    try {
+      console.log('   🚀 Broadcasting to BCH Chipnet...');
+      
+      // Prepare swipe object with the new attestation data for the broadcaster
+      const attestedSwipe = {
+        ...swipe,
+        oracle_signature: attestation.signature,
+        oracle_message: attestation.message,
+      };
+
+      const txId = await broadcastSwipe(attestedSwipe);
+      
+      // Update swipe status to CONFIRMED in Supabase
+      const { error: confirmError } = await supabase
+        .from('swipes')
+        .update({
+          status: 'CONFIRMED',
+          bch_tx_hash: txId,
+          bch_confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', swipe.id);
+
+        if (confirmError) {
+          console.error(`   ❌ Failed to confirm swipe: ${confirmError.message}`);
+        } else {
+          console.log(`   ✅ Status: ATTESTED → CONFIRMED`);
+          console.log(`   🔗 Explorer: https://chipnet.chaingraph.cash/tx/${txId}`);
+        }
+
+    } catch (broadcastErr: any) {
+      const errMsg = broadcastErr.message || broadcastErr;
+      console.error(`   ❌ Broadcast failed: ${errMsg}`);
+      
+      // Log to file for debugging
+      try {
+        const fs = await import('fs');
+        const logMsg = `[${new Date().toISOString()}] Swipe ${swipe.id} Broadcast Error: ${errMsg}\nStack: ${broadcastErr.stack}\n\n`;
+        fs.appendFileSync('broadcast_error.log', logMsg);
+        console.log('   📄 Error logged to apps/oracle/broadcast_error.log');
+      } catch (fsErr) {
+        console.error('   ⚠️ Failed to write to log file.');
+      }
+
+      // Note: We leave it as ATTESTED so it can be retried or debugged manually, 
+      // or the user can broadcast it themselves via frontend if we built that flow.
+    }
 
   } catch (err: any) {
     console.error(`   ❌ Signing failed: ${err.message}`);
