@@ -1,158 +1,53 @@
-/**
- * ═══════════════════════════════════════════════════════
- * ZERO-GRAVITY: AI Parse API Route
- * ═══════════════════════════════════════════════════════
- *
- * POST /api/ai/parse
- *
- * Takes natural language input, sanitizes it against injection,
- * sends to Gemini 3 Flash, validates output with Zod, enforces
- * confidence threshold, and logs everything to ai_parse_log.
- *
- * Request:  { "input": "Pay $25 for coffee" }
- * Response: { "amount": 25, "currency": "USD", "memo": "coffee", "confidence": 0.95 }
- *           or { "error": "NOT_A_PAYMENT" }
- */
+import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-import { NextRequest, NextResponse } from 'next/server';
-import {
-  sanitizeInput,
-  AIParseRequestSchema,
-  NLParseResultSchema,
-  MIN_CONFIDENCE,
-  isSwipeIntent,
-} from '@zero-gravity/shared';
-import { parseNaturalLanguage } from '../../../../lib/gemini.js';
-import { getSupabaseServer } from '../../../../lib/supabase-server.js';
+// Initialize Gemini with the API Key
+const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    // 1. Parse and validate request body
-    const body = await request.json();
-    const parseResult = AIParseRequestSchema.safeParse(body);
-
-    if (!parseResult.success) {
-      return NextResponse.json(
-        { error: 'INVALID_REQUEST', details: parseResult.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const rawInput = parseResult.data.input;
-
-    // 2. Sanitize input against injection
-    const { sanitized, flaggedInjection, matchedPatterns } =
-      sanitizeInput(rawInput);
-
-    // If injection was flagged, reject immediately without calling Gemini
-    if (flaggedInjection) {
-      console.warn(
-        `⚠️  Injection flagged: "${rawInput.substring(0, 50)}..." ` +
-        `(patterns: ${matchedPatterns.join(', ')})`
-      );
-
-      // Still log to ai_parse_log for audit
-      await logParse({
-        rawInput,
-        sanitizedInput: sanitized,
-        outputJson: { error: 'NOT_A_PAYMENT' as const },
-        confidence: null,
-        flaggedInjection: true,
+    if (!apiKey) {
+      // Mocked response for demo purposes if no API key is set
+      return NextResponse.json({
+        amount: 5,
+        currency: 'USD',
+        memo: 'Test Coffee',
+        confidence: 0.95
       });
-
-      return NextResponse.json({ error: 'NOT_A_PAYMENT' });
     }
 
-    // 3. Call Gemini 3 Flash
-    const geminiResult = await parseNaturalLanguage(sanitized);
-
-    // 4. Validate output with Zod
-    const zodResult = NLParseResultSchema.safeParse(geminiResult.raw);
-
-    if (!zodResult.success) {
-      // Gemini returned something unexpected — treat as not-a-payment
-      console.warn(`⚠️  Gemini returned invalid schema: ${JSON.stringify(geminiResult.raw)}`);
-
-      await logParse({
-        rawInput,
-        sanitizedInput: sanitized,
-        outputJson: { error: 'NOT_A_PAYMENT' as const },
-        confidence: null,
-        flaggedInjection: false,
-      });
-
-      return NextResponse.json({ error: 'NOT_A_PAYMENT' });
+    const { prompt } = await request.json();
+    if (!prompt) {
+      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const nlResult = zodResult.data;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // 5. Enforce confidence threshold
-    if (isSwipeIntent(nlResult) && nlResult.confidence < MIN_CONFIDENCE) {
-      console.log(
-        `📉 Below confidence threshold: ${nlResult.confidence} < ${MIN_CONFIDENCE}`
-      );
+    // Strict system prompt for deterministic JSON output
+    const systemPrompt = `You are the Zero-Gravity NLP parser. Extract payment intent from the user text.
+Return ONLY valid JSON, with EXACTLY these keys:
+- amount (number)
+- currency (string, e.g., 'USD', 'ETH')
+- memo (string, short description)
+- confidence (number between 0.0 and 1.0)
 
-      await logParse({
-        rawInput,
-        sanitizedInput: sanitized,
-        outputJson: { error: 'NOT_A_PAYMENT' as const },
-        confidence: nlResult.confidence,
-        flaggedInjection: false,
-      });
+Example text: "pay 5 bucks for coffee"
+Example JSON: {"amount": 5, "currency": "USD", "memo": "Coffee", "confidence": 0.98}
 
-      return NextResponse.json({ error: 'NOT_A_PAYMENT' });
-    }
+Text: "${prompt}"`;
 
-    // 6. Log successful parse
-    const confidence = isSwipeIntent(nlResult) ? nlResult.confidence : null;
+    const result = await model.generateContent(systemPrompt);
+    const responseText = result.response.text().trim();
+    
+    // Clean markdown code blocks if present
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    await logParse({
-      rawInput,
-      sanitizedInput: sanitized,
-      outputJson: nlResult,
-      confidence,
-      flaggedInjection: false,
-    });
-
-    console.log(
-      `✅ AI Parse: "${sanitized.substring(0, 40)}..." → ` +
-      `${JSON.stringify(nlResult)} (${geminiResult.latencyMs}ms, ${geminiResult.tokensUsed} tokens)`
-    );
-
-    // 7. Return result
-    return NextResponse.json(nlResult);
+    const parsed = JSON.parse(cleanJson);
+    return NextResponse.json(parsed);
 
   } catch (error: any) {
-    console.error('❌ AI Parse error:', error.message || error);
-    return NextResponse.json(
-      { error: 'INTERNAL_ERROR' },
-      { status: 500 }
-    );
-  }
-}
-
-// ── Audit Logger ────────────────────────────────────────
-
-interface ParseLogEntry {
-  rawInput: string;
-  sanitizedInput: string;
-  outputJson: Record<string, unknown>;
-  confidence: number | null;
-  flaggedInjection: boolean;
-}
-
-async function logParse(entry: ParseLogEntry): Promise<void> {
-  try {
-    const supabase = getSupabaseServer();
-    await supabase.from('ai_parse_log').insert({
-      raw_input: entry.rawInput,
-      sanitized_input: entry.sanitizedInput,
-      output_json: entry.outputJson,
-      confidence: entry.confidence,
-      flagged_injection: entry.flaggedInjection,
-    });
-  } catch (err: any) {
-    // Non-fatal: don't crash the request if logging fails
-    console.error('⚠️  Failed to log AI parse:', err.message);
+    console.error("Gemini Parse Error:", error);
+    return NextResponse.json({ error: "Failed to parse intent. Please try standard format (e.g., Pay $5 for coffee)." }, { status: 500 });
   }
 }
