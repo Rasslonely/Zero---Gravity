@@ -12,6 +12,7 @@
     "@argent/get-starknet": "^6.4.7",
     "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.43.0",
+    "canvas-confetti": "^1.9.2",
     "@zero-gravity/shared": "*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/canvas-confetti": "^1.6.4",
     "autoprefixer": "^10.4.24",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.3",

@@ -60,22 +60,22 @@ export function NLInput() {
           onChange={(e) => setInput(e.target.value)}
           disabled={isParsing || !!intent}
           placeholder="What would you like to pay?"
-          className="w-full relative bg-black/80 border border-white/10 rounded-full pl-6 pr-14 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-ai-purple/50 transition-all font-sans placeholder:text-white/30 text-white disabled:opacity-50"
+          className="w-full relative bg-[#0a0a0f]/80 backdrop-blur-xl border border-white/10 rounded-2xl pl-6 pr-14 py-4 text-base focus:outline-none focus:ring-1 focus:ring-ai-purple focus:border-ai-purple/50 transition-all font-sans placeholder:text-white/30 text-white disabled:opacity-50 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus:shadow-[0_0_40px_rgba(168,85,247,0.2)]"
         />
         
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10">
           {!isParsing && !intent && (
             <button 
               type="submit"
               disabled={!input.trim()}
-              className="w-8 h-8 rounded-full bg-ai-purple/10 hover:bg-ai-purple/30 flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-ai-purple/10 group-hover:text-ai-purple"
+              className="w-10 h-10 rounded-xl bg-ai-purple/10 hover:bg-ai-purple/30 flex items-center justify-center transition-all duration-300 disabled:opacity-30 disabled:hover:bg-ai-purple/10 group-hover:text-ai-purple group-focus-within:bg-ai-purple/20"
             >
-              <Sparkles className="w-4 h-4 text-ai-purple" />
+              <Sparkles className="w-5 h-5 text-ai-purple/80 group-focus-within:text-ai-purple" />
             </button>
           )}
           {isParsing && (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center">
-              <Loader2 className="w-4 h-4 text-ai-purple animate-spin" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-ai-purple/10">
+              <Loader2 className="w-5 h-5 text-ai-purple animate-spin" />
             </div>
           )}
         </div>

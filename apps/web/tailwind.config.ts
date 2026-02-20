@@ -52,11 +52,13 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Zero-Gravity Specific Colors
         "starknet-blue": "#6366f1",
         "bch-green": "#22c55e",
         "ai-purple": "#a855f7",
         "bg-zero": "#0a0a0f",
+      },
+      fontFamily: {
+        space: ["var(--font-space)", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

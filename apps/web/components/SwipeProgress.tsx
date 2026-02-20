@@ -24,34 +24,35 @@ export function SwipeProgress({ status, bchTxId }: SwipeProgressProps) {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm mt-8 glass rounded-2xl p-6 border-white/10"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-full mt-10 glass rounded-[24px] p-8 border-white/5 bg-[#0a0a0f]/60 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+      aria-live="polite"
     >
-      <h3 className="text-xs uppercase tracking-widest text-white/50 mb-6 flex items-center gap-2">
+      <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-8 flex items-center gap-3">
         <ArrowRightCircle className="w-4 h-4 text-ai-purple" />
         Transaction Lifecycle
       </h3>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {STAGES.map((stage, i) => {
           const isPast = _index > i || status === 'confirmed';
           const isCurrent = _index === i && status !== 'confirmed';
           
           return (
-            <div key={stage.key} className="flex items-center gap-4">
-               <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-500
-                 ${isPast ? 'bg-bch-green/20 border border-bch-green/50 text-bch-green' : 
-                   isCurrent ? 'bg-starknet-blue/20 border border-starknet-blue/50 text-starknet-blue shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 
+            <div key={stage.key} className="flex items-center gap-5 group">
+               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-700
+                 ${isPast ? 'bg-bch-green/20 border border-bch-green text-bch-green shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 
+                   isCurrent ? 'bg-starknet-blue/20 border-2 border-starknet-blue text-starknet-blue shadow-[0_0_20px_rgba(99,102,241,0.6)] scale-110' : 
                    'bg-white/5 border border-white/10 text-white/20'}`}
                >
-                 {isPast ? <Check className="w-3 h-3" /> : 
-                  isCurrent ? <Loader2 className="w-3 h-3 animate-spin" /> : 
-                  <span className="text-[10px]">{i+1}</span>}
+                 {isPast ? <Check className="w-4 h-4" /> : 
+                  isCurrent ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                  <span className="text-[10px] font-bold">{i+1}</span>}
                </div>
-               <span className={`text-sm transition-colors duration-500 font-medium ${
-                 isPast ? 'text-white' : 
-                 isCurrent ? 'text-starknet-blue drop-shadow-md' : 
+               <span className={`text-sm transition-all duration-700 font-medium tracking-wide ${
+                 isPast ? 'text-white/80' : 
+                 isCurrent ? 'text-starknet-blue drop-shadow-md font-bold' : 
                  'text-white/30'
                }`}>
                  {stage.label}
