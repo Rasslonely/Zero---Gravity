@@ -108,18 +108,18 @@ Done ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ █�
 - [x] **1.4 Deploy Script Ready** (pending env vars for Sepolia)
   - [x] TypeScript deploy script using `starknet.js` (`scripts/deploy.ts`)
   - [x] Declares class + deploys instance + prints Voyager explorer link
-  - [ ] *Actual deployment pending: set `DEPLOYER_PRIVATE_KEY` + `DEPLOYER_ADDRESS` + `STARKNET_RPC_URL` in `.env`*
+  - [x] *Actual deployment completed via Braavos Smart Wallet Dapp interface.*
 
 > **📋 Starknet Deployment Registry:**
 > | Item | Value |
 > |---|---|
 > | Network | Sepolia Testnet |
-> | Class Hash | `pending deployment` |
-> | Contract Address | `pending deployment` |
-> | Deployer Address | `pending deployment` |
-> | Deploy TX Hash | `pending deployment` |
-> | Block Explorer | `pending deployment` |
-> | Verified on Explorer? | ⬜ |
+> | Class Hash | `0x11f1c20430aade00ac21e362b9ea6c6f1f46fac5e4240f5491e93085dd5c7f5` |
+> | Contract Address | `0x7e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb` |
+> | Deployer | Braavos Smart Wallet |
+> | Deploy TX Hash | `0x76b17352f762eefcad612a9e94b34d0b0458b7792ca2dda822b88d730074057` |
+> | Block Explorer | [View on Voyager](https://sepolia.voyager.online/contract/0x7e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb) |
+> | Verified on Explorer? | ✅ |
 
 ---
 

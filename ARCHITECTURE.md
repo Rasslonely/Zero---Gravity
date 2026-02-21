@@ -40,7 +40,7 @@ We **do not bridge tokens**. We build a **State-Verification Loop**:
 | **Age** | 25-38 |
 | **Profile** | Holds $5K-$50K in DeFi. Uses Starknet for privacy/cost. Wants to *spend* without KYC off-ramps. |
 | **Pain Point** | "I have money on-chain but I can't buy coffee with it without doxxing myself to Coinbase." |
-| **Behavior** | Uses Argent X, reads EIPs, active on Telegram. Won't use a product that looks like a 2019 DApp. |
+| **Behavior** | Uses Argent X / Braavos, reads EIPs, active on Telegram. Won't use a product that looks like a 2019 DApp. |
 | **Success Metric** | Vault → Merchant payment in < 5 seconds with zero identity leakage. |
 
 ---
@@ -52,7 +52,7 @@ We **do not bridge tokens**. We build a **State-Verification Loop**:
 ```mermaid
 graph TD
     subgraph "🟦 CHAIN A: STARKNET"
-        U["👤 User<br/>(Argent X Wallet)"]
+        U["👤 User<br/>(Argent X / Braavos)"]
         V["📦 Vault.cairo<br/>(Solvency Engine)"]
         E["📡 SolvencyEvent<br/>(UserHash + Amount + Nonce)"]
     end
@@ -104,7 +104,7 @@ graph TD
 sequenceDiagram
     actor User
     participant Gemini as Gemini 3 Flash (NL Parser)
-    participant ArgentX as Argent X Wallet
+    participant ArgentX as Argent X / Braavos
     participant Vault as Vault.cairo (Starknet)
     participant Supabase as Supabase Realtime
     participant Oracle as Shadow Oracle (Node.js)

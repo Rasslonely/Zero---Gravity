@@ -33,7 +33,7 @@ function requireEnv(key: string): string {
     console.error('   Copy .env.example → .env and fill in all values.');
     process.exit(1);
   }
-  return val;
+  return val.trim();
 }
 
 // ── Paths to compiled artifacts ─────────────────────────
@@ -50,8 +50,16 @@ async function main() {
   console.log();
 
   // 1. Initialize provider + account
+  // In starknet.js v9 RpcProvider takes an object with nodeUrl.
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
-  const account = new Account(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
+  
+  // Account in Starknet.js v9+ expects a single AccountOptions object
+  const account = new Account({
+    provider,
+    address: DEPLOYER_ADDRESS,
+    signer: DEPLOYER_PRIVATE_KEY,
+    cairoVersion: "1"
+  });
 
   // Verify account connectivity
   const chainId = await provider.getChainId();
