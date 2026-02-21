@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Spend your Starknet vault balance at any Bitcoin Cash merchant — instantly, privately, without bridging a single token.",
+  "packageManager": "npm@10.8.2",
   "workspaces": [
     "apps/*",
     "packages/*"
