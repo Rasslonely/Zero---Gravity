@@ -3,22 +3,18 @@ import { connect, disconnect } from '@argent/get-starknet';
 import { RpcProvider, Contract, cairo, CallData } from 'starknet';
 import { useVaultStore } from '../stores/vaultStore';
 
-// Sepolia testnet constants
-const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://free-rpc.nethermind.io/sepolia-juno/';
-const FALLBACK_RPC = 'https://starknet-sepolia.public.blastapi.io';
+// Sepolia testnet constants (Protocol Addresses)
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS || '0x07e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb';
-
-// Token Addresses (Sepolia)
 const STRK_ADDRESS = '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d';
 const USDC_ADDRESS = '0x053c91253695913a87d95d1bd30c2d61585543cc85a96057c17c46927f8aadb5';
 
-// Minimized ABIs for balance fetching (Modern felt252/u256 types)
+// Minimized ABIs for balance fetching (Compatible with starknet.js v5)
 const ERC20_ABI = [
   {
     name: "balanceOf",
     type: "function",
-    inputs: [{ name: "account", type: "felt252" }],
-    outputs: [{ name: "balance", type: "u256" }],
+    inputs: [{ name: "account", type: "felt" }],
+    outputs: [{ name: "balance", type: "Uint256" }],
     state_mutability: "view",
   },
 ];
@@ -40,15 +36,26 @@ const VAULT_ABI = [
   }
 ];
 
+// Global cache to avoid React closure bugs and Zustand serialization issues
+let activeWallet: any = null;
+
 export function useVault() {
   const { connected, address, setConnected, updateBalances } = useVaultStore();
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Helper to safely extract BigInt from any Starknet response type (v4, v5, bigint, object)
+  // Helper to safely extract BigInt from any Starknet response type (v4, v5, bigint, object, array)
   const extractBigInt = (val: any): bigint => {
     if (typeof val === 'bigint') return val;
     if (val === null || val === undefined) return 0n;
     
+    // Array response from raw callContract (e.g. ['low', 'high'])
+    if (Array.isArray(val)) {
+      if (val.length >= 2 && typeof val[0] !== 'object') {
+        return (BigInt(val[1]) << 128n) + BigInt(val[0]);
+      }
+      if (val.length > 0) return extractBigInt(val[0]);
+    }
+
     if (typeof val === 'object') {
       // Uint256: { low, high }
       if ('low' in val && 'high' in val) {
@@ -66,24 +73,39 @@ export function useVault() {
     }
   };
   
-  // Refresh real on-chain balances with retry logic
-  const refreshBalance = useCallback(async (walletAddress: string, useFallback = false) => {
+  // Refresh real on-chain balances (Raw Call to bypass ABIs)
+  const refreshBalance = useCallback(async (walletAddress: string) => {
     if (VAULT_ADDRESS === '0x0' || !walletAddress) return;
-    const currentRpc = useFallback ? FALLBACK_RPC : RPC_URL;
     
     try {
-      const provider = new RpcProvider({ nodeUrl: currentRpc });
+      if (!activeWallet || !activeWallet.provider) {
+        console.warn("⚠️ Cannot sync balance: Wallet provider missing from active session");
+        return;
+      }
+
+      const provider = activeWallet.provider;
       
-      // Fetch STRK Balance
-      const strkContract = new Contract(ERC20_ABI, STRK_ADDRESS, provider);
-      const strkBalance = await strkContract.balanceOf(walletAddress);
+      // Fetch STRK Balance via RAW call (Immune to ABI validation bugs)
+      // starknet.js v5/v6 callContract returns an Array of strings directly: ['0x12', '0x0']
+      const strkRes = await provider.callContract({
+        contractAddress: STRK_ADDRESS,
+        entrypoint: "balanceOf",
+        calldata: CallData.compile([walletAddress])
+      });
+      console.log("Raw STRK Call:", strkRes);
+      // strkRes is the array itself in modern starknet.js, or an object with .result in older versions
+      const strkData = Array.isArray(strkRes) ? strkRes : (strkRes as any).result;
+      const strkVal = extractBigInt(strkData);
       
-      // Fetch Vault Balance (USDC equivalent in the protocol)
-      const vaultContract = new Contract(VAULT_ABI, VAULT_ADDRESS, provider);
-      const vaultBalance = await vaultContract.get_balance(walletAddress);
-      
-      const strkVal = extractBigInt(strkBalance);
-      const vaultVal = extractBigInt(vaultBalance);
+      // Fetch Vault Balance via RAW call
+      const vaultRes = await provider.callContract({
+        contractAddress: VAULT_ADDRESS,
+        entrypoint: "get_balance",
+        calldata: CallData.compile([walletAddress])
+      });
+      console.log("Raw Vault Call:", vaultRes);
+      const vaultData = Array.isArray(vaultRes) ? vaultRes : (vaultRes as any).result;
+      const vaultVal = extractBigInt(vaultData);
 
       // Update store
       updateBalances({ 
@@ -92,14 +114,9 @@ export function useVault() {
         STRK: strkVal
       });
       
-      console.log(`✅ [RPC Balance Sync] RPC: ${currentRpc}, Vault: ${vaultVal}, STRK: ${strkVal}`);
+      console.log(`✅ [Wallet Provider] Parsed Balances: Vault: ${vaultVal}, STRK: ${strkVal}`);
     } catch (err: any) {
-      console.warn(`⚠️ Balance Fetch Issue on ${currentRpc}:`, err.message || err);
-      // If we failed on primary, try fallback once
-      if (!useFallback) {
-        console.log("🔄 Retrying with fallback RPC...");
-        await refreshBalance(walletAddress, true);
-      }
+      console.warn(`⚠️ Balance sync failed via Wallet:`, err.message || err);
     }
   }, [updateBalances]);
 
@@ -107,6 +124,8 @@ export function useVault() {
   useEffect(() => {
     if (address && connected) {
       refreshBalance(address);
+      const intervalId = setInterval(() => refreshBalance(address), 15000);
+      return () => clearInterval(intervalId);
     }
   }, [address, connected, refreshBalance]);
 
@@ -119,29 +138,33 @@ export function useVault() {
     }, 15000);
 
     try {
-      // Use 'alwaysAsk' to give the user a choice and avoid auto-selection biases
+      // Connect and handle the initial handshake.
       const starknet = await connect({ modalMode: "alwaysAsk" });
-      
       clearTimeout(timeoutId);
+
+      // Simple address extraction without v4 fallback loops
+      let addr = starknet?.selectedAddress;
       
-      if (starknet && starknet.isConnected) {
-        setConnected(true, starknet.selectedAddress);
-        await refreshBalance(starknet.selectedAddress);
-      } else {
-        // Fallback: Check if window.starknet exists directly in case the library modal is failing
-        if (typeof window !== 'undefined' && (window as any).starknet) {
-           const fallbackStarknet = (window as any).starknet;
-           // Explicitly ask for v5 API or let it default to latest, because v4 is deprecated
-           await fallbackStarknet.enable({ starknetVersion: "v5" });
-           if (fallbackStarknet.isConnected) {
-             setConnected(true, fallbackStarknet.selectedAddress);
-             await refreshBalance(fallbackStarknet.selectedAddress);
-             setIsConnecting(false);
-             clearTimeout(timeoutId);
-             return;
-           }
+      // Ready Wallet (Argent X) Async Handshake Fix
+      if (starknet && starknet.isConnected && !addr) {
+        console.log("⏳ Wallet connected, but address pending... polling (max 5s)");
+        for (let i = 0; i < 10; i++) {
+          await new Promise(r => setTimeout(r, 500));
+          if (starknet.selectedAddress) {
+            addr = starknet.selectedAddress;
+            break;
+          }
         }
-        console.warn("User closed modal or no wallet found.");
+      }
+
+      if (starknet && starknet.isConnected && addr) {
+        localStorage.removeItem('ZG_LOGGED_OUT');
+        activeWallet = starknet; 
+        setConnected(true, addr);
+        setTimeout(() => refreshBalance(addr), 500);
+        setTimeout(() => refreshBalance(addr), 2500);
+      } else {
+        console.warn("Wallet session failed or user rejected.");
         setIsConnecting(false);
       }
     } catch (err) {
@@ -156,6 +179,8 @@ export function useVault() {
   const disconnectWallet = async () => {
     try {
       await disconnect();
+      localStorage.setItem('ZG_LOGGED_OUT', 'true');
+      activeWallet = null;
       setConnected(false, null);
       updateBalances({ USDC: 0n, ETH: 0n, STRK: 0n });
     } catch (err) {
@@ -166,18 +191,27 @@ export function useVault() {
   // Re-connect silently on mount if already authorized
   useEffect(() => {
     const tryEagerConnect = async () => {
+      // Don't auto-connect if the user explicitly logged out
+      if (localStorage.getItem('ZG_LOGGED_OUT') === 'true') {
+        return;
+      }
+
+      // Delay eager connect slightly to let the page settle
+      await new Promise(r => setTimeout(r, 1000));
       try {
         const starknet = await connect({ modalMode: "neverAsk" });
         if (starknet && starknet.isConnected) {
-          setConnected(true, starknet.selectedAddress);
-          refreshBalance(starknet.selectedAddress);
+          activeWallet = starknet;
+          setConnected(true, starknet.selectedAddress as string);
+          // Wait for connection to be stable before refresh
+          setTimeout(() => refreshBalance(starknet.selectedAddress as string), 500);
         }
       } catch (err) {
         console.warn("Eager connect skipped:", err);
       }
     };
     tryEagerConnect();
-  }, [setConnected, refreshBalance]);
+  }, []); // Only run once on mount
 
   const requestSwipe = async (amountUsd: number, bchAddress: string, memo: string) => {
     if (!VAULT_ADDRESS || VAULT_ADDRESS === '0x0') {
@@ -185,12 +219,17 @@ export function useVault() {
     }
 
     try {
-      const starknet = await connect({ modalMode: "neverAsk" });
-      if (!starknet || !starknet.isConnected || !starknet.account) {
+      // 0. Connect with Timeout Watchdog
+      const starknet = await Promise.race([
+        connect({ modalMode: "neverAsk" }),
+        new Promise<null>((_, reject) => setTimeout(() => reject(new Error("WALLET_TIMEOUT")), 15000))
+      ]);
+
+      if (!activeWallet || !activeWallet.isConnected || !activeWallet.account) {
         throw new Error("Wallet not connected");
       }
 
-      const account = starknet.account;
+      const account = activeWallet.account;
       const { balances } = useVaultStore.getState();
       const formatVaultBalance = (amount: bigint) => (Number(amount) / 1_000_000).toFixed(2);
       
@@ -219,35 +258,39 @@ export function useVault() {
 
       // Winning Edge: Intelligent Gas Selection
       const txVersion = (balances.ETH === 0n && balances.STRK > 0n) ? 3 : 1;
-      console.log(`Executing with TX Version: ${txVersion} (Reason: ${txVersion === 3 ? 'STRK Gas' : 'Standard Gas'})`);
+      
+      // 1. Execute with Timeout Watchdog
+      const result = await Promise.race([
+        account.execute(call, undefined, { version: txVersion }),
+        new Promise<null>((_, reject) => setTimeout(() => reject(new Error("EXECUTE_TIMEOUT")), 60000))
+      ]);
 
-      const result = await account.execute(call, undefined, { version: txVersion });
+      if (!result) throw new Error("TRANSACTION_FAILED");
+
       console.log("Transaction submitted:", result.transaction_hash);
       
-      const provider = new RpcProvider({ nodeUrl: RPC_URL });
-
-      // 1. Transaction Monitor (L2 Watcher)
-      // If the transaction is dropped/rejected, we want to know even if Supabase doesn't update.
+      // 2. Transaction Monitor (CORS-Safe L2 Watcher)
       const monitorStatus = async () => {
         let attempts = 0;
-        const maxAttempts = 30; // 5 minutes approx
+        const maxAttempts = 30; 
+        
         while (attempts < maxAttempts) {
           try {
-            const receipt: any = await provider.getTransactionReceipt(result.transaction_hash);
+            // Use the cached activeWallet to avoid 'v4' hook errors from reconnecting
+            if (!activeWallet || !activeWallet.provider) break;
+
+            const receipt: any = await activeWallet.provider.getTransactionReceipt(result.transaction_hash);
             const status = receipt.status || receipt.finality_status;
             
             if (status === 'REJECTED' || status === 'REVERTED') {
               console.error("❌ Transaction failed on-chain:", status);
-              // In a real app we'd dispatch an error to the store here to reset UI
               return;
             }
             if (status === 'ACCEPTED_ON_L2' || status === 'ACCEPTED_ON_L1') {
               console.log("✅ Transaction finalized on L2");
               return;
             }
-          } catch (e) {
-            // Transaction might not be indexed yet
-          }
+          } catch (e) {}
           await new Promise(r => setTimeout(r, 10000));
           attempts++;
         }
@@ -266,10 +309,9 @@ export function useVault() {
     if (!VAULT_ADDRESS || VAULT_ADDRESS === '0x0') throw new Error("Vault not configured");
     
     try {
-      const starknet = await connect({ modalMode: "neverAsk" });
-      if (!starknet || !starknet.isConnected || !starknet.account) throw new Error("Wallet not connected");
+      if (!activeWallet || !activeWallet.isConnected || !activeWallet.account) throw new Error("Wallet not connected");
 
-      const account = starknet.account;
+      const account = activeWallet.account;
       const USDC_DECIMALS = 6;
       const amountRaw = BigInt(Math.floor(amountUsd * Math.pow(10, USDC_DECIMALS)));
 
@@ -283,7 +325,13 @@ export function useVault() {
         })
       };
 
-      const result = await account.execute(call);
+      const result = await Promise.race([
+        account.execute(call),
+        new Promise<null>((_, reject) => setTimeout(() => reject(new Error("DEPOSIT_TIMEOUT")), 60000))
+      ]);
+
+      if (!result) throw new Error("DEPOSIT_FAILED");
+
       console.log("Deposit submitted:", result.transaction_hash);
       
       setTimeout(() => refreshBalance(account.address), 5000);

@@ -25,8 +25,7 @@ export const metadata: Metadata = {
   description: "Spend your Starknet vault balance at any Bitcoin Cash merchant—instantly, privately, without bridging a single token.",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/zero-gravity.png", sizes: "32x32", type: "image/png" }
+      { url: "/zero-gravity.png", sizes: "64x64", type: "image/png" }
     ],
     apple: "/zero-gravity.png",
   },

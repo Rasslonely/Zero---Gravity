@@ -44,6 +44,10 @@ export function NLInput({ onConfirm }: NLInputProps) {
       }
 
       setIntent(data);
+      // Auto-confirm if confidence is 1.0 (Mock/Admin entries)
+      if (data.confidence === 1.0) {
+        onConfirm?.(data);
+      }
     } catch (err: any) {
       setError(err.message || "I didn't quite get that. Try: 'Pay $5 for coffee'");
     } finally {

@@ -8,8 +8,9 @@ interface VaultState {
     ETH: bigint;
     STRK: bigint;
   };
+  starknetObj: any | null;
   pendingSwipes: any[];
-  setConnected: (status: boolean, addr: string | null) => void;
+  setConnected: (status: boolean, addr: string | null, obj?: any) => void;
   updateBalances: (balances: { USDC: bigint; ETH: bigint; STRK: bigint }) => void;
 }
 
@@ -21,7 +22,8 @@ export const useVaultStore = create<VaultState>((set) => ({
     ETH: 0n,
     STRK: 0n,
   },
+  starknetObj: null,
   pendingSwipes: [],
-  setConnected: (status, addr) => set({ connected: status, address: addr }),
+  setConnected: (status, addr, obj = null) => set({ connected: status, address: addr, starknetObj: obj }),
   updateBalances: (balances) => set({ balances }),
 }));

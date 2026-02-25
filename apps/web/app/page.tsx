@@ -154,12 +154,7 @@ export default function Home() {
                    </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/5">
-                   <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] mb-1 font-medium">Wallet STRK (Gas)</p>
-                   <p className="text-sm font-mono text-starknet-blue/80">
-                      {formatBalance(balances.STRK, 18)} STRK
-                   </p>
-                </div>
+
                 
                 {!connected && (
                    <p className="text-sm text-starknet-blue/60 leading-relaxed font-light mt-4">Connect your Starknet wallet to access your validium liquidity.</p>

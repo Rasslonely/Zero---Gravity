@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+// Safely initialize to prevent WebSocket crashes if env vars are missing
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export type SwipeStatus = 'idle' | 'locking' | 'attesting' | 'broadcasting' | 'confirmed' | 'failed';
@@ -14,7 +15,11 @@ export function useRealtime(swipeId: string | null, starknetAddress?: string | n
   const [bchTxId, setBchTxId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
+    // Skip subscription if Supabase is not configured
+    if (!supabase) {
+      console.warn("⚠️ Supabase realtime skipped: Missing environment variables");
+      return;
+    }
     
     // If we have an address but no specific swipe ID, we are waiting for a new one to appear
     const channel = supabase
@@ -47,17 +52,19 @@ export function useRealtime(swipeId: string | null, starknetAddress?: string | n
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [swipeId, starknetAddress]);
 
   // Safety timeout: Reset UI if stuck in 'locking' for too long (e.g. dropped TX)
   useEffect(() => {
-    if (status === 'locking') {
+    if (status === 'locking' || status === 'attesting') {
       const timer = setTimeout(() => {
-        console.warn("⏱️ Swipe Timeout: No updates from L2/Oracle after 45s. Resetting UI.");
+        console.warn("⏱️ Swipe Timeout: No updates from L2/Oracle after 30s. Resetting UI.");
         setStatus('failed');
-      }, 45000);
+      }, 30000);
       return () => clearTimeout(timer);
     }
   }, [status]);
