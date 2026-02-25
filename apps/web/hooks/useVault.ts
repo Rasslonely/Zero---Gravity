@@ -324,7 +324,7 @@ export function useVault() {
                 nonce: Date.now(), // Unique intent nonce
                 status: 'PENDING',
                 starknet_tx_hash: result.transaction_hash,
-                memo: memo
+                nl_input: memo
               })
               .select('id')
               .single();
