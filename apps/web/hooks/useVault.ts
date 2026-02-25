@@ -96,11 +96,10 @@ export function useVault() {
     }, 15000);
 
     try {
-      // Use 'canAsk' and wrap in a race to prevent the modal promise from hanging infinitely
-      const starknet: any = await Promise.race([
-        connect({ modalMode: "canAsk" }),
-        new Promise((resolve) => setTimeout(() => resolve(null), 3000))
-      ]);
+      // Use 'alwaysAsk' to give the user a choice and avoid auto-selection biases
+      const starknet = await connect({ modalMode: "alwaysAsk" });
+      
+      clearTimeout(timeoutId);
       
       if (starknet && starknet.isConnected) {
         setConnected(true, starknet.selectedAddress);
