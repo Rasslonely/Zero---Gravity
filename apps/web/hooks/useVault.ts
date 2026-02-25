@@ -4,21 +4,21 @@ import { RpcProvider, Contract, cairo, CallData } from 'starknet';
 import { useVaultStore } from '../stores/vaultStore';
 
 // Sepolia testnet constants
-const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.public.blastapi.io';
-const FALLBACK_RPC = 'https://rpc.starknet-sepolia.lava.build';
+const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://free-rpc.nethermind.io/sepolia-juno/';
+const FALLBACK_RPC = 'https://starknet-sepolia.public.blastapi.io';
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS || '0x07e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb';
 
 // Token Addresses (Sepolia)
 const STRK_ADDRESS = '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d';
 const USDC_ADDRESS = '0x053c91253695913a87d95d1bd30c2d61585543cc85a96057c17c46927f8aadb5';
 
-// Minimized ABIs for balance fetching
+// Minimized ABIs for balance fetching (Modern felt252/u256 types)
 const ERC20_ABI = [
   {
     name: "balanceOf",
     type: "function",
-    inputs: [{ name: "account", type: "felt" }],
-    outputs: [{ name: "balance", type: "Uint256" }],
+    inputs: [{ name: "account", type: "felt252" }],
+    outputs: [{ name: "balance", type: "u256" }],
     state_mutability: "view",
   },
 ];

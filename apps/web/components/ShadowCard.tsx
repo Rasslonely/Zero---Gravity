@@ -85,7 +85,7 @@ export function ShadowCard({ swipeStatus, burnerAddress }: ShadowCardProps) {
         <img 
           src="/zero-gravity.png" 
           alt="0G" 
-          className="w-5 h-5 object-contain opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" 
+          className="w-5 h-5 object-contain opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] drop-shadow-[0_0_12px_rgba(34,197,94,0.3)]" 
         />
       </div>
     </motion.div>

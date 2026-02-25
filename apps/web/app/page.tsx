@@ -176,19 +176,22 @@ export default function Home() {
                     </button>
 
                     {/* Pro Refill UI (E-Wallet Style) */}
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
-                      <div className="flex justify-between items-center text-[10px] text-white/30 uppercase tracking-widest font-bold">
-                        <span>Top-up Vault</span>
-                        <span className="text-starknet-blue/60">Wallet: {formatBalance(balances.STRK, 18)} STRK</span>
+                    <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4 shadow-inner">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-bold">Top-up Vault</span>
+                        <div className="flex items-center gap-2">
+                           <div className="w-1 h-1 rounded-full bg-starknet-blue animate-pulse" />
+                           <span className="text-[9px] text-starknet-blue/80 font-mono">Available: {formatBalance(balances.STRK, 18)} STRK</span>
+                        </div>
                       </div>
                       <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs font-mono">$</span>
+                        <div className="relative flex-1 group">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-xs font-mono group-focus-within:text-starknet-blue transition-colors">$</span>
                           <input 
                             type="number"
                             value={refillInput}
                             onChange={(e) => setRefillInput(e.target.value)}
-                            className="w-full h-11 bg-black/40 border border-white/10 rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-starknet-blue/50 transition-colors font-mono"
+                            className="w-full h-12 bg-black/60 border border-white/5 rounded-xl pl-8 pr-3 text-sm text-white focus:outline-none focus:border-starknet-blue/30 focus:bg-black/80 transition-all font-mono"
                             placeholder="Amount"
                           />
                         </div>
@@ -201,12 +204,12 @@ export default function Home() {
                             try { await depositFunds(val); } catch(e) {}
                             setIsDepositing(false);
                           }}
-                          className="px-6 h-11 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium text-xs transition-all disabled:opacity-50 flex items-center gap-2">
-                          {isDepositing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Fill"}
+                          className="px-6 h-12 rounded-xl bg-starknet-blue/20 hover:bg-starknet-blue/30 border border-starknet-blue/30 text-white font-bold text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center min-w-[100px] uppercase">
+                          {isDepositing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Deposit"}
                         </button>
                       </div>
-                      <p className="text-[9px] text-white/20 leading-tight">
-                        Moves liquidity from your Starknet wallet into the 0G Protocol for instant swipes.
+                      <p className="text-[9px] text-white/20 leading-relaxed italic opacity-60">
+                        Funds are moved from your personal Starknet wallet into the 0G Protocol Vault for instant, gas-free swipes.
                       </p>
                     </div>
                   </div>
