@@ -82,7 +82,11 @@ export function ShadowCard({ swipeStatus, burnerAddress }: ShadowCardProps) {
       
       <div className="flex justify-between items-end relative z-10 font-mono text-sm opacity-60">
         <span>{burnerAddress ? burnerAddress.slice(12, 16) + ' ' + burnerAddress.slice(16, 20) + ' ' + burnerAddress.slice(20, 24) + ' ' + burnerAddress.slice(24, 28) : '____ ____ ____ ____'}</span>
-        <span>0G</span>
+        <img 
+          src="/zero-gravity.png" 
+          alt="0G" 
+          className="w-5 h-5 object-contain opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" 
+        />
       </div>
     </motion.div>
   );

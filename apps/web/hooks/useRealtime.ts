@@ -27,11 +27,6 @@ export function useRealtime(swipeId: string | null, starknetAddress?: string | n
           table: 'swipes',
         },
         (payload) => {
-          // In a real app, we'd join with users table or have starknet_address in swipes.
-          // For the hackathon, the Oracle includes the address in the metadata or we match by recent tx.
-          // Since the Oracle currently doesn't add the address directly to the swipe table, 
-          // we'll assume the most recent 'PENDING' swipe is the user's if they just clicked.
-          
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
              const data = payload.new;
              
@@ -55,6 +50,17 @@ export function useRealtime(swipeId: string | null, starknetAddress?: string | n
       supabase.removeChannel(channel);
     };
   }, [swipeId, starknetAddress]);
+
+  // Safety timeout: Reset UI if stuck in 'locking' for too long (e.g. dropped TX)
+  useEffect(() => {
+    if (status === 'locking') {
+      const timer = setTimeout(() => {
+        console.warn("⏱️ Swipe Timeout: No updates from L2/Oracle after 45s. Resetting UI.");
+        setStatus('failed');
+      }, 45000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   return { status, bchTxId, setStatus };
 }

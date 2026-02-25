@@ -31,6 +31,7 @@ export default function Home() {
   
   const [bchTx, setBchTx] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
+  const [refillInput, setRefillInput] = useState("10");
 
   // Sync protocol status to local UI state for animations
   const swipeStatus = protocolStatus;
@@ -80,14 +81,22 @@ export default function Home() {
 
       {/* Top Bar: AI Input Area */}
       <header className="h-24 border-b border-white/5 bg-black/20 backdrop-blur-2xl z-50 flex items-center justify-between px-8 shrink-0 relative shadow-2xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ai-purple to-starknet-blue flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-            <span className="font-bold text-white tracking-tighter">0G</span>
-          </div>
+        <div className="flex items-center gap-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative"
+          >
+            <img 
+              src="/zero-gravity.png" 
+              alt="Zero-Gravity Logo" 
+              className="w-12 h-12 object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+            />
+          </motion.div>
           <motion.span 
              initial={{ opacity: 0, x: -10 }}
              animate={{ opacity: 1, x: 0 }}
-             className="font-semibold tracking-[0.2em] hidden md:block text-sm"
+             className="font-semibold tracking-[0.3em] hidden md:block text-sm bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60"
           >
              ZERO-GRAVITY
           </motion.span>
@@ -157,24 +166,49 @@ export default function Home() {
                 )}
 
                 {connected && swipeStatus === 'idle' && (
-                  <div className="flex gap-3 mt-4">
+                  <div className="space-y-4 mt-6">
+                    {/* Shadow Swipe Button */}
                     <button 
                       onClick={triggerMockSwipe}
-                      className="flex-[2] py-4 rounded-2xl bg-starknet-blue/10 hover:bg-starknet-blue/20 border border-starknet-blue/30 text-starknet-blue font-semibold tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center gap-3">
+                      className="w-full py-4 rounded-2xl bg-starknet-blue/10 hover:bg-starknet-blue/20 border border-starknet-blue/30 text-starknet-blue font-semibold tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center gap-3">
                        <span className="w-2 h-2 rounded-full bg-starknet-blue animate-pulse" />
                        Shadow Swipe
                     </button>
-                    <button 
-                      disabled={isDepositing}
-                      onClick={async () => {
-                        setIsDepositing(true);
-                        try { await depositFunds(10); } catch(e) {}
-                        setIsDepositing(false);
-                      }}
-                      className="flex-1 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50">
-                       {isDepositing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refill"}
-                       <span className="text-[8px] opacity-40 uppercase tracking-tighter">+$10 Vault</span>
-                    </button>
+
+                    {/* Pro Refill UI (E-Wallet Style) */}
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                      <div className="flex justify-between items-center text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                        <span>Top-up Vault</span>
+                        <span className="text-starknet-blue/60">Wallet: {formatBalance(balances.STRK, 18)} STRK</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs font-mono">$</span>
+                          <input 
+                            type="number"
+                            value={refillInput}
+                            onChange={(e) => setRefillInput(e.target.value)}
+                            className="w-full h-11 bg-black/40 border border-white/10 rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-starknet-blue/50 transition-colors font-mono"
+                            placeholder="Amount"
+                          />
+                        </div>
+                        <button 
+                          disabled={isDepositing || !refillInput}
+                          onClick={async () => {
+                            const val = parseFloat(refillInput);
+                            if (isNaN(val) || val <= 0) return;
+                            setIsDepositing(true);
+                            try { await depositFunds(val); } catch(e) {}
+                            setIsDepositing(false);
+                          }}
+                          className="px-6 h-11 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium text-xs transition-all disabled:opacity-50 flex items-center gap-2">
+                          {isDepositing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Fill"}
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-white/20 leading-tight">
+                        Moves liquidity from your Starknet wallet into the 0G Protocol for instant swipes.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

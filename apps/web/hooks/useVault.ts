@@ -191,13 +191,19 @@ export function useVault() {
       }
 
       const account = starknet.account;
+      const { balances } = useVaultStore.getState();
+      const formatVaultBalance = (amount: bigint) => (Number(amount) / 1_000_000).toFixed(2);
       
       // Constants for 0G Protocol
       const USDC_DECIMALS = 6;
       const amountRaw = BigInt(Math.floor(amountUsd * Math.pow(10, USDC_DECIMALS)));
       
+      // 0. Pre-flight Balance Check (Prevents Dropped Transactions)
+      if (balances.USDC < amountRaw) {
+        throw new Error(`INSUFFICIENT_VAULT_BALANCE: You need $${amountUsd} in Vault, but have $${formatVaultBalance(balances.USDC)}`);
+      }
+
       // Convert BCH address to Felt (placeholder logic - simplified for demo)
-      // In a real app we'd use a more robust hash conversion
       const bchAddressFelt = BigInt("0x" + Buffer.from(bchAddress).toString("hex").substring(0, 60));
 
       console.log(`Initiating swipe: $${amountUsd} to ${bchAddress}`);
@@ -212,18 +218,43 @@ export function useVault() {
       };
 
       // Winning Edge: Intelligent Gas Selection
-      // If user has 0 ETH but has STRK, we force version 3 (STRK fees)
-      const { balances } = useVaultStore.getState();
       const txVersion = (balances.ETH === 0n && balances.STRK > 0n) ? 3 : 1;
-      
       console.log(`Executing with TX Version: ${txVersion} (Reason: ${txVersion === 3 ? 'STRK Gas' : 'Standard Gas'})`);
 
       const result = await account.execute(call, undefined, { version: txVersion });
       console.log("Transaction submitted:", result.transaction_hash);
       
-      // Refresh balance after transaction (after a short delay for indexing)
-      setTimeout(() => refreshBalance(account.address), 5000);
+      const provider = new RpcProvider({ nodeUrl: RPC_URL });
+
+      // 1. Transaction Monitor (L2 Watcher)
+      // If the transaction is dropped/rejected, we want to know even if Supabase doesn't update.
+      const monitorStatus = async () => {
+        let attempts = 0;
+        const maxAttempts = 30; // 5 minutes approx
+        while (attempts < maxAttempts) {
+          try {
+            const receipt: any = await provider.getTransactionReceipt(result.transaction_hash);
+            const status = receipt.status || receipt.finality_status;
+            
+            if (status === 'REJECTED' || status === 'REVERTED') {
+              console.error("❌ Transaction failed on-chain:", status);
+              // In a real app we'd dispatch an error to the store here to reset UI
+              return;
+            }
+            if (status === 'ACCEPTED_ON_L2' || status === 'ACCEPTED_ON_L1') {
+              console.log("✅ Transaction finalized on L2");
+              return;
+            }
+          } catch (e) {
+            // Transaction might not be indexed yet
+          }
+          await new Promise(r => setTimeout(r, 10000));
+          attempts++;
+        }
+      };
       
+      monitorStatus(); 
+      setTimeout(() => refreshBalance(account.address), 5000);
       return result;
     } catch (err) {
       console.error("Request swipe failed:", err);
