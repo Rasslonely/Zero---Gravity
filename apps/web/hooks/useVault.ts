@@ -93,7 +93,6 @@ export function useVault() {
         entrypoint: "balanceOf",
         calldata: CallData.compile([walletAddress])
       });
-      console.log("Raw STRK Call:", strkRes);
       // strkRes is the array itself in modern starknet.js, or an object with .result in older versions
       const strkData = Array.isArray(strkRes) ? strkRes : (strkRes as any).result;
       const strkVal = extractBigInt(strkData);
@@ -104,7 +103,6 @@ export function useVault() {
         entrypoint: "get_balance",
         calldata: CallData.compile([walletAddress])
       });
-      console.log("Raw Vault Call:", vaultRes);
       const vaultData = Array.isArray(vaultRes) ? vaultRes : (vaultRes as any).result;
       const vaultVal = extractBigInt(vaultData);
 
@@ -114,8 +112,6 @@ export function useVault() {
         ETH: 0n,
         STRK: strkVal
       });
-      
-      console.log(`✅ [Wallet Provider] Parsed Balances: Vault: ${vaultVal}, STRK: ${strkVal}`);
     } catch (err: any) {
       console.warn(`⚠️ Balance sync failed via Wallet:`, err.message || err);
     }
