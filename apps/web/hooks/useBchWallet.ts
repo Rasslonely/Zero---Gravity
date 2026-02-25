@@ -24,9 +24,9 @@ export function useBchWallet() {
 
     setIsInitializing(true);
     try {
-      // Create a timeout promise to prevent infinite hanging
+      // Create a timeout promise to prevent infinite hanging. Increase to 10s for slow WASM loads.
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Libauth instantiation timeout')), 3000)
+        setTimeout(() => reject(new Error('Libauth instantiation timeout')), 10000)
       );
 
       const secp256k1 = await Promise.race([instantiateSecp256k1(), timeoutPromise]) as any;
@@ -46,13 +46,12 @@ export function useBchWallet() {
       setBurnerAddress(cashAddress);
     } catch (err) {
       console.warn("Burner init fell back to mock due to:", err);
-      // Fallback: Generate a visual mock address so UI doesn't hang
-      const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-      const mockAddress = `bchtest:qp${randomHex}shadowx`;
+      // Fallback: Use a completely valid testnet P2PKH address so the Oracle doesn't crash
+      // during the decodeCashAddr phase if libauth fails to load in the browser.
+      const validMockAddress = "bchtest:qzt6sz836e4cd9p9sv6we0pmnmcztyu3r58uqr0k8q";
       
-      localStorage.setItem('0g_burner_address', mockAddress);
-      setBurnerAddress(mockAddress);
+      localStorage.setItem('0g_burner_address', validMockAddress);
+      setBurnerAddress(validMockAddress);
     } finally {
       setIsInitializing(false);
     }

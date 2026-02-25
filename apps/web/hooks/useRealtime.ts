@@ -54,12 +54,13 @@ export function useRealtime(swipeId: string | null, starknetAddress?: string | n
   }, [swipeId, starknetAddress]);
 
   // Safety timeout: Reset UI if stuck in 'locking' for too long (e.g. dropped TX)
+  // Starknet takes longer, especially on Sepolia. Allow up to 60s before timing out.
   useEffect(() => {
     if (status === 'locking' || status === 'attesting') {
       const timer = setTimeout(() => {
-        console.warn("⏱️ Swipe Timeout: No updates from L2/Oracle after 30s. Resetting UI.");
+        console.warn("⏱️ Swipe Timeout: No updates from L2/Oracle after 60s. Resetting UI.");
         setStatus('failed');
-      }, 30000);
+      }, 60000);
       return () => clearTimeout(timer);
     }
   }, [status]);
