@@ -129,14 +129,20 @@ export default function Home() {
               </div>
               
               <div className="space-y-8 relative z-10">
-                <div>
-                   <p className="text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-medium">Vault Balance</p>
-                   <motion.h1 
-                      layoutId="vault-balance"
-                      className="text-5xl font-light font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70"
-                   >
-                      ${formatBalance(balances.USDC)} <span className="text-2xl text-white/30 tracking-normal ml-1">USDC</span>
-                   </motion.h1>
+                <div className="flex justify-between items-start">
+                   <div>
+                      <p className="text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-medium">Vault Balance</p>
+                      <motion.h1 
+                         layoutId="vault-balance"
+                         className="text-5xl font-light font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70"
+                      >
+                         ${formatBalance(balances.USDC)} <span className="text-2xl text-white/30 tracking-normal ml-1">USDC</span>
+                      </motion.h1>
+                   </div>
+                   <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-[8px] text-white/40 uppercase tracking-tighter font-medium">Live Sync</span>
+                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/5">

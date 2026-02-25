@@ -46,9 +46,12 @@ export function WalletConnect() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className="absolute right-0 mt-3 w-56 p-2 rounded-2xl bg-[#0d0d12] border border-white/10 shadow-2xl backdrop-blur-xl z-[100]"
           >
-            <div className="p-3 border-b border-white/5 mb-1 overflow-hidden">
-              <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold mb-1">Account</p>
-              <p className="text-xs font-mono text-white/80 truncate" title={address}>
+            <div className="p-3 border-b border-white/5 mb-1">
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Account</p>
+                <span className="px-1.5 py-0.5 rounded-sm bg-starknet-blue/20 text-starknet-blue text-[8px] font-bold uppercase">Sepolia</span>
+              </div>
+              <p className="text-xs font-mono text-white/80" title={address}>
                 {truncateAddress(address)}
               </p>
             </div>

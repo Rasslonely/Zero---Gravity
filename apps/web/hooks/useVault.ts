@@ -44,14 +44,26 @@ export function useVault() {
   const { connected, address, setConnected, updateBalances } = useVaultStore();
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Helper to safely extract BigInt from a Uint256 response or raw bigint
+  // Helper to safely extract BigInt from any Starknet response type (v4, v5, bigint, object)
   const extractBigInt = (val: any): bigint => {
     if (typeof val === 'bigint') return val;
-    if (val && typeof val === 'object' && 'low' in val) {
-      // It's a Uint256 object { low, high }
-      return (BigInt(val.high) << 128n) + BigInt(val.low);
+    if (val === null || val === undefined) return 0n;
+    
+    if (typeof val === 'object') {
+      // Uint256: { low, high }
+      if ('low' in val && 'high' in val) {
+        return (BigInt(val.high) << 128n) + BigInt(val.low);
+      }
+      // Result object: { balance: ... } or { result: ... } or { 0: ... }
+      const nested = val.balance ?? val.result ?? val[0];
+      if (nested !== undefined) return extractBigInt(nested);
     }
-    return BigInt(val || 0);
+
+    try {
+      return BigInt(val);
+    } catch (e) {
+      return 0n;
+    }
   };
   
   // Refresh real on-chain balances with retry logic
@@ -70,8 +82,8 @@ export function useVault() {
       const vaultContract = new Contract(VAULT_ABI, VAULT_ADDRESS, provider);
       const vaultBalance = await vaultContract.get_balance(walletAddress);
       
-      const strkVal = extractBigInt(strkBalance.balance || strkBalance);
-      const vaultVal = extractBigInt(vaultBalance.balance || vaultBalance);
+      const strkVal = extractBigInt(strkBalance);
+      const vaultVal = extractBigInt(vaultBalance);
 
       // Update store
       updateBalances({ 
