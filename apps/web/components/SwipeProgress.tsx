@@ -40,7 +40,9 @@ export function SwipeProgress({ status, bchTxId }: SwipeProgressProps) {
   if (status === 'idle') return null;
 
   const currentStageIndex = STAGES.findIndex(s => s.key === status);
-  const _index = currentStageIndex === -1 && status === 'failed' ? 4 : currentStageIndex;
+  // If failed, we want to stay at the stage we were at, or show the failure clearly.
+  // We'll set _index to the last successful stage or -1 if none.
+  const _index = currentStageIndex;
 
   return (
     <motion.div 
@@ -71,17 +73,20 @@ export function SwipeProgress({ status, bchTxId }: SwipeProgressProps) {
 
       <div className="space-y-6">
         {STAGES.map((stage, i) => {
-          const isPast = _index > i || status === 'confirmed';
-          const isCurrent = _index === i && status !== 'confirmed';
+          const isPast = status !== 'failed' && (_index > i || status === 'confirmed');
+          const isCurrent = (status === 'failed' && _index === i) || (_index === i && status !== 'confirmed');
+          const isFailed = status === 'failed' && _index === i;
           
           return (
             <div key={stage.key} className="flex items-center gap-5 group">
                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-700
                  ${isPast ? 'bg-bch-green/20 border border-bch-green text-bch-green shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 
+                   isFailed ? 'bg-red-500/20 border-2 border-red-500 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-shake' :
                    isCurrent ? 'bg-starknet-blue/20 border-2 border-starknet-blue text-starknet-blue shadow-[0_0_20px_rgba(99,102,241,0.6)] scale-110' : 
                    'bg-white/5 border border-white/10 text-white/20'}`}
                >
                  {isPast ? <Check className="w-4 h-4" /> : 
+                  isFailed ? <Check className="w-4 h-4 rotate-45" /> : 
                   isCurrent ? <Loader2 className="w-4 h-4 animate-spin" /> : 
                   <span className="text-[10px] font-bold">{i+1}</span>}
                </div>

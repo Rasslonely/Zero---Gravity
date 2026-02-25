@@ -48,12 +48,18 @@ export default function Home() {
     
     setProtocolStatus('locking');
     try {
-      const result = await requestSwipe(intent.amount, burnerAddress, intent.memo);
-      console.log("Swipe successful on Starknet:", result.transaction_hash);
-      // Once submitted, useRealtime will catch the Supabase update.
-    } catch (err) {
+      const result: any = await requestSwipe(intent.amount, burnerAddress, intent.memo);
+      console.log("Starknet TX submitted:", result.transaction_hash);
+      
+      // The bridge now returns the internal Supabase ID
+      if (result.swipeId) {
+        console.log("Tracking Protocol Lifecycle for ID:", result.swipeId);
+        setActiveSwipeId(result.swipeId);
+      }
+      
+    } catch (err: any) {
       setProtocolStatus('failed');
-      console.error("Swipe failed:", err);
+      console.error("Swipe flow interrupted:", err);
     }
   };
 

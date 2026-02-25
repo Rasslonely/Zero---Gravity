@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { connect, disconnect } from '@argent/get-starknet';
 import { RpcProvider, Contract, cairo, CallData } from 'starknet';
 import { useVaultStore } from '../stores/vaultStore';
+import { supabase } from '../lib/supabase';
 
 // Sepolia testnet constants (Protocol Addresses)
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS || '0x07e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb';
@@ -161,6 +162,25 @@ export function useVault() {
         localStorage.removeItem('ZG_LOGGED_OUT');
         activeWallet = starknet; 
         setConnected(true, addr);
+
+        // Ensure user exists in Supabase (The Bridge Foundation)
+        if (supabase) {
+          try {
+            const { data: user, error: fetchErr } = await supabase
+              .from('users')
+              .select('id')
+              .eq('starknet_address', addr)
+              .single();
+
+            if (fetchErr && fetchErr.code === 'PGRST116') {
+              console.log("🆕 Registering new user in Supabase:", addr);
+              await supabase.from('users').insert({ starknet_address: addr });
+            }
+          } catch (dbErr) {
+            console.warn("⚠️ Supabase auto-registration failed:", dbErr);
+          }
+        }
+
         setTimeout(() => refreshBalance(addr), 500);
         setTimeout(() => refreshBalance(addr), 2500);
       } else {
@@ -298,6 +318,47 @@ export function useVault() {
       
       monitorStatus(); 
       setTimeout(() => refreshBalance(account.address), 5000);
+
+      // 3. THE MISSING BRIDGE: Register intent in Supabase so Oracle sees it
+      if (supabase && address) {
+        try {
+          // Get the internal UUID for the user
+          const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('starknet_address', address)
+            .single();
+
+          if (user) {
+            console.log("🌉 Bridging Starknet TX to Supabase...");
+            const { data: swipe, error: bridgeErr } = await supabase
+              .from('swipes')
+              .insert({
+                user_id: user.id,
+                amount_usd: amountUsd,
+                amount_bch: amountUsd * 0.00015, // Approximate fee logic for demo
+                bch_recipient: bchAddress,
+                nonce: Date.now(), // Unique intent nonce
+                status: 'PENDING',
+                starknet_tx_hash: result.transaction_hash,
+                memo: memo
+              })
+              .select('id')
+              .single();
+
+            if (bridgeErr) throw bridgeErr;
+            console.log("✅ Bridge successful. Swipe ID:", swipe.id);
+            
+            // We return both result and the new swipe ID for the frontend to track
+            return { ...result, swipeId: swipe.id };
+          }
+        } catch (dbErr) {
+          console.error("❌ Protocol Bridge Failure:", dbErr);
+          // Don't throw here, the L2 TX is already in flight. 
+          // Just the UI tracking might be degraded.
+        }
+      }
+
       return result;
     } catch (err) {
       console.error("Request swipe failed:", err);
