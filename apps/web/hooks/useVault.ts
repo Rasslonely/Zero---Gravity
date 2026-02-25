@@ -4,7 +4,8 @@ import { RpcProvider, Contract, cairo, CallData } from 'starknet';
 import { useVaultStore } from '../stores/vaultStore';
 
 // Sepolia testnet constants
-const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://free-rpc.nethermind.io/sepolia-juno/';
+const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.public.blastapi.io';
+const FALLBACK_RPC = 'https://rpc.starknet-sepolia.lava.build';
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_VAULT_CONTRACT_ADDRESS || '0x07e2f9fae965077e6c47938112dfd15ba4b2aa776d75661b40b8bacc3c3f57cb';
 
 // Token Addresses (Sepolia)
@@ -53,11 +54,13 @@ export function useVault() {
     return BigInt(val || 0);
   };
   
-  // Refresh real on-chain balances
-  const refreshBalance = useCallback(async (walletAddress: string) => {
+  // Refresh real on-chain balances with retry logic
+  const refreshBalance = useCallback(async (walletAddress: string, useFallback = false) => {
     if (VAULT_ADDRESS === '0x0' || !walletAddress) return;
+    const currentRpc = useFallback ? FALLBACK_RPC : RPC_URL;
+    
     try {
-      const provider = new RpcProvider({ nodeUrl: RPC_URL });
+      const provider = new RpcProvider({ nodeUrl: currentRpc });
       
       // Fetch STRK Balance
       const strkContract = new Contract(ERC20_ABI, STRK_ADDRESS, provider);
@@ -67,16 +70,24 @@ export function useVault() {
       const vaultContract = new Contract(VAULT_ABI, VAULT_ADDRESS, provider);
       const vaultBalance = await vaultContract.get_balance(walletAddress);
       
+      const strkVal = extractBigInt(strkBalance.balance || strkBalance);
+      const vaultVal = extractBigInt(vaultBalance.balance || vaultBalance);
+
       // Update store
       updateBalances({ 
-        USDC: extractBigInt(vaultBalance.balance || vaultBalance),
+        USDC: vaultVal,
         ETH: 0n,
-        STRK: extractBigInt(strkBalance.balance || strkBalance)
+        STRK: strkVal
       });
       
-      console.log(`✅ [RPC Balance Sync] Vault: ${extractBigInt(vaultBalance.balance || vaultBalance)}, STRK: ${extractBigInt(strkBalance.balance || strkBalance)}`);
+      console.log(`✅ [RPC Balance Sync] RPC: ${currentRpc}, Vault: ${vaultVal}, STRK: ${strkVal}`);
     } catch (err: any) {
-      console.warn("⚠️ Balance Fetch Issue (Likely RPC congestion):", err.message || err);
+      console.warn(`⚠️ Balance Fetch Issue on ${currentRpc}:`, err.message || err);
+      // If we failed on primary, try fallback once
+      if (!useFallback) {
+        console.log("🔄 Retrying with fallback RPC...");
+        await refreshBalance(walletAddress, true);
+      }
     }
   }, [updateBalances]);
 
