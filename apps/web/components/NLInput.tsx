@@ -11,7 +11,11 @@ interface Intent {
   confidence: number;
 }
 
-export function NLInput() {
+interface NLInputProps {
+  onConfirm?: (intent: Intent) => void;
+}
+
+export function NLInput({ onConfirm }: NLInputProps) {
   const [input, setInput] = useState("");
   const [isParsing, setIsParsing] = useState(false);
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -115,7 +119,10 @@ export function NLInput() {
                >
                 Cancel
               </button>
-              <button className="flex-[2] py-2 rounded-lg bg-ai-purple/20 hover:bg-ai-purple/40 border border-ai-purple/50 text-ai-purple text-sm transition-colors shadow-[0_0_15px_rgba(168,85,247,0.2)] font-medium flex items-center justify-center gap-2">
+              <button 
+                onClick={() => onConfirm?.(intent)}
+                className="flex-[2] py-2 rounded-lg bg-ai-purple/20 hover:bg-ai-purple/40 border border-ai-purple/50 text-ai-purple text-sm transition-colors shadow-[0_0_15px_rgba(168,85,247,0.2)] font-medium flex items-center justify-center gap-2"
+              >
                 Load Shadow Card <ArrowRight className="w-4 h-4" />
               </button>
             </div>

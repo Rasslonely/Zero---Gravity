@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['@bitauth/libauth'],
   webpack: (config) => {
     // Enable top-level await to support libauth's WebAssembly and Crypto modules
     config.experiments = { 

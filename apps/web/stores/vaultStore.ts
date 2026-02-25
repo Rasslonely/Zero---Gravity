@@ -6,10 +6,11 @@ interface VaultState {
   balances: {
     USDC: bigint;
     ETH: bigint;
+    STRK: bigint;
   };
   pendingSwipes: any[];
   setConnected: (status: boolean, addr: string | null) => void;
-  updateBalances: (balances: { USDC: bigint; ETH: bigint }) => void;
+  updateBalances: (balances: { USDC: bigint; ETH: bigint; STRK: bigint }) => void;
 }
 
 export const useVaultStore = create<VaultState>((set) => ({
@@ -18,6 +19,7 @@ export const useVaultStore = create<VaultState>((set) => ({
   balances: {
     USDC: 0n,
     ETH: 0n,
+    STRK: 0n,
   },
   pendingSwipes: [],
   setConnected: (status, addr) => set({ connected: status, address: addr }),

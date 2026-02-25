@@ -5,33 +5,64 @@ import { WalletConnect } from "../components/WalletConnect";
 import { NLInput } from "../components/NLInput";
 import { useBchWallet } from "../hooks/useBchWallet";
 import { useVaultStore } from "../stores/vaultStore";
+import { useVault } from "../hooks/useVault";
+import { useRealtime } from "../hooks/useRealtime";
 import { SwipeProgress } from "../components/SwipeProgress";
 import { ShadowCard } from "../components/ShadowCard";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SwipeStatus } from "../hooks/useRealtime";
+import { CheckCircle2, Receipt, Loader2 } from "lucide-react";
+
+interface Intent {
+  amount: number;
+  currency: string;
+  memo: string;
+  confidence: number;
+}
 
 export default function Home() {
   const { burnerAddress } = useBchWallet();
-  const { balances, connected } = useVaultStore();
+  const { balances, connected, address } = useVaultStore();
+  const { requestSwipe, depositFunds } = useVault();
   
-  // Mock state for visual testing of the UI without a full stack run
-  const [swipeStatus, setSwipeStatus] = useState<SwipeStatus>('idle');
+  // Real-time protocol state tracking
+  const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null);
+  const { status: protocolStatus, bchTxId: liveBchTx, setStatus: setProtocolStatus } = useRealtime(activeSwipeId, address);
+  
   const [bchTx, setBchTx] = useState<string | null>(null);
+  const [isDepositing, setIsDepositing] = useState(false);
 
-  const formatBalance = (amount: bigint) => {
-    // Basic USDC formatting (6 decimals)
-    const num = Number(amount) / 1_000_000;
-    return num.toFixed(2);
+  // Sync protocol status to local UI state for animations
+  const swipeStatus = protocolStatus;
+  const currentBchTx = liveBchTx || bchTx;
+
+  const formatBalance = (amount: bigint, decimals = 6) => {
+    // Basic formatting
+    const num = Number(BigInt(amount)) / Math.pow(10, decimals);
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const handleSwipeIntent = async (intent: Intent) => {
+    if (!burnerAddress) return;
+    
+    setProtocolStatus('locking');
+    try {
+      const result = await requestSwipe(intent.amount, burnerAddress, intent.memo);
+      console.log("Swipe successful on Starknet:", result.transaction_hash);
+      // Once submitted, useRealtime will catch the Supabase update.
+    } catch (err) {
+      setProtocolStatus('failed');
+      console.error("Swipe failed:", err);
+    }
   };
 
   const triggerMockSwipe = () => {
-    setSwipeStatus('locking');
-    setTimeout(() => setSwipeStatus('attesting'), 2000);
-    setTimeout(() => setSwipeStatus('broadcasting'), 4000);
-    setTimeout(() => {
-       setSwipeStatus('confirmed');
-       setBchTx("e2123e0ceb1bbf4af828bc0c728b8398b3b6be51331145eb663b160e61c385ef");
-    }, 6000);
+    handleSwipeIntent({
+      amount: 5,
+      currency: 'USD',
+      memo: 'Manual Shadow Swipe',
+      confidence: 1.0
+    });
   };
 
   return (
@@ -64,7 +95,7 @@ export default function Home() {
         
         {/* Magic UI NL Input */}
         <div className="flex-1 flex justify-center max-w-2xl mx-12">
-           <NLInput />
+           <NLInput onConfirm={handleSwipeIntent} />
         </div>
 
         <div className="flex justify-end min-w-[180px]">
@@ -99,7 +130,7 @@ export default function Home() {
               
               <div className="space-y-8 relative z-10">
                 <div>
-                   <p className="text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-medium">Available Balance</p>
+                   <p className="text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-medium">Vault Balance</p>
                    <motion.h1 
                       layoutId="vault-balance"
                       className="text-5xl font-light font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70"
@@ -107,18 +138,38 @@ export default function Home() {
                       ${formatBalance(balances.USDC)} <span className="text-2xl text-white/30 tracking-normal ml-1">USDC</span>
                    </motion.h1>
                 </div>
+
+                <div className="pt-4 border-t border-white/5">
+                   <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] mb-1 font-medium">Wallet STRK (Gas)</p>
+                   <p className="text-sm font-mono text-starknet-blue/80">
+                      {formatBalance(balances.STRK, 18)} STRK
+                   </p>
+                </div>
                 
                 {!connected && (
                    <p className="text-sm text-starknet-blue/60 leading-relaxed font-light mt-4">Connect your Starknet wallet to access your validium liquidity.</p>
                 )}
 
                 {connected && swipeStatus === 'idle' && (
-                   <button 
-                    onClick={triggerMockSwipe}
-                    className="w-full py-4 mt-4 rounded-2xl bg-starknet-blue/10 hover:bg-starknet-blue/20 border border-starknet-blue/30 text-starknet-blue font-semibold tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center gap-3">
-                     <span className="w-2 h-2 rounded-full bg-starknet-blue animate-pulse" />
-                     Initiate Shadow Swipe
-                   </button>
+                  <div className="flex gap-3 mt-4">
+                    <button 
+                      onClick={triggerMockSwipe}
+                      className="flex-[2] py-4 rounded-2xl bg-starknet-blue/10 hover:bg-starknet-blue/20 border border-starknet-blue/30 text-starknet-blue font-semibold tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.15)] hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center gap-3">
+                       <span className="w-2 h-2 rounded-full bg-starknet-blue animate-pulse" />
+                       Shadow Swipe
+                    </button>
+                    <button 
+                      disabled={isDepositing}
+                      onClick={async () => {
+                        setIsDepositing(true);
+                        try { await depositFunds(10); } catch(e) {}
+                        setIsDepositing(false);
+                      }}
+                      className="flex-1 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50">
+                       {isDepositing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refill"}
+                       <span className="text-[8px] opacity-40 uppercase tracking-tighter">+$10 Vault</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -148,9 +199,39 @@ export default function Home() {
       {swipeStatus !== 'idle' && (
         <div className="absolute inset-x-0 bottom-12 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 z-50 pointer-events-none flex justify-center">
             <div className="pointer-events-auto">
-               <SwipeProgress status={swipeStatus} bchTxId={bchTx} />
+               <SwipeProgress status={swipeStatus} bchTxId={currentBchTx} />
             </div>
         </div>
+      )}
+
+      {/* Merchant Receipt Confirmation (Winning Edge UI) */}
+      {swipeStatus === 'confirmed' && (
+        <motion.div 
+           initial={{ opacity: 0, scale: 0.9, y: 20 }}
+           animate={{ opacity: 1, scale: 1, y: 0 }}
+           className="absolute bottom-10 right-10 z-[60] glass p-6 rounded-2xl border-bch-green/30 shadow-[0_0_40px_rgba(34,197,94,0.15)] flex flex-col gap-4 max-w-xs"
+        >
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-bch-green/20 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-bch-green" />
+             </div>
+             <div>
+                <h3 className="font-bold text-sm tracking-tight">PAYMENT RECEIVED</h3>
+                <p className="text-[10px] text-white/40 font-mono italic">0x{currentBchTx?.substring(0, 12)}...</p>
+             </div>
+          </div>
+          <div className="h-px bg-white/5 w-full" />
+          <div className="flex justify-between items-center text-xs">
+             <span className="text-white/40 flex items-center gap-1"><Receipt className="w-3 h-3" /> Merchant ID</span>
+             <span className="font-mono text-bch-green">COFFEE-SHOP-01</span>
+          </div>
+          <button 
+             onClick={() => { setProtocolStatus('idle'); setBchTx(null); }}
+             className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[11px] font-medium transition-colors"
+          >
+             Dismiss Receipt
+          </button>
+        </motion.div>
       )}
     </main>
   );

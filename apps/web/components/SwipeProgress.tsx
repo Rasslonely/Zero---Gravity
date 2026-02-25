@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Loader2, ArrowRightCircle, ExternalLink } from "lucide-react";
+import { Check, Loader2, ArrowRightCircle, ExternalLink, Timer, ShieldCheck } from "lucide-react";
 import { SwipeStatus } from "../hooks/useRealtime";
 
 interface SwipeProgressProps {
@@ -17,6 +18,25 @@ const STAGES = [
 ];
 
 export function SwipeProgress({ status, bchTxId }: SwipeProgressProps) {
+  const [timer, setTimer] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (status === 'locking' && !startTime) {
+      setStartTime(performance.now());
+      setTimer(0);
+    }
+  }, [status, startTime]);
+
+  useEffect(() => {
+    if (startTime && status !== 'confirmed' && status !== 'failed') {
+      const interval = setInterval(() => {
+        setTimer((performance.now() - startTime!) / 1000);
+      }, 57);
+      return () => clearInterval(interval);
+    }
+  }, [startTime, status]);
+
   if (status === 'idle') return null;
 
   const currentStageIndex = STAGES.findIndex(s => s.key === status);
@@ -26,13 +46,28 @@ export function SwipeProgress({ status, bchTxId }: SwipeProgressProps) {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="w-full mt-10 glass rounded-[24px] p-8 border-white/5 bg-[#0a0a0f]/60 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+      className="w-full mt-10 glass rounded-[24px] p-8 border-white/5 bg-[#0a0a0f]/60 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] min-w-[320px]"
       aria-live="polite"
     >
-      <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-8 flex items-center gap-3">
-        <ArrowRightCircle className="w-4 h-4 text-ai-purple" />
-        Transaction Lifecycle
-      </h3>
+      <div className="flex justify-between items-start mb-8">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 flex items-center gap-3">
+          <ArrowRightCircle className="w-4 h-4 text-ai-purple" />
+          Transaction Lifecycle
+        </h3>
+        {timer > 0 && (
+          <div className="flex flex-col items-end">
+             <div className="flex items-center gap-2 text-ai-purple text-xs font-mono">
+                <Timer className="w-3 h-3" />
+                {timer.toFixed(2)}s
+             </div>
+             {status === 'confirmed' && (
+                <span className="text-[9px] text-bch-green font-bold tracking-tighter mt-1 flex items-center gap-1">
+                   <ShieldCheck className="w-3 h-3" /> ZERO-BRIDGE-RISK
+                </span>
+             )}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-6">
         {STAGES.map((stage, i) => {
