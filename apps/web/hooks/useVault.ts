@@ -289,45 +289,32 @@ export function useVault() {
 
       console.log("Transaction submitted:", result.transaction_hash);
       
-      // 2. Transaction Monitor (CORS-Safe L2 Watcher)
-      const monitorStatus = async () => {
-        let attempts = 0;
-        const maxAttempts = 30; 
-        
-        while (attempts < maxAttempts) {
-          try {
-            // Use the cached activeWallet to avoid 'v4' hook errors from reconnecting
-            if (!activeWallet || !activeWallet.provider) break;
+      let finalSwipeId = null;
 
-            const receipt: any = await activeWallet.provider.getTransactionReceipt(result.transaction_hash);
-            const status = receipt.status || receipt.finality_status;
-            
-            if (status === 'REJECTED' || status === 'REVERTED') {
-              console.error("❌ Transaction failed on-chain:", status);
-              return;
-            }
-            if (status === 'ACCEPTED_ON_L2' || status === 'ACCEPTED_ON_L1') {
-              console.log("✅ Transaction finalized on L2");
-              return;
-            }
-          } catch (e) {}
-          await new Promise(r => setTimeout(r, 10000));
-          attempts++;
-        }
-      };
-      
-      monitorStatus(); 
-      setTimeout(() => refreshBalance(account.address), 5000);
-
-      // 3. THE MISSING BRIDGE: Register intent in Supabase so Oracle sees it
-      if (supabase && address) {
+      // 2. THE FAST BRIDGE: Register intent in Supabase IMMEDIATELLY so Oracle sees it
+      // Don't wait for L2 finality to start the Oracle clock!
+      if (supabase && account.address) {
         try {
           // Get the internal UUID for the user
-          const { data: user } = await supabase
+          let { data: user, error: fetchErr } = await supabase
             .from('users')
             .select('id')
-            .eq('starknet_address', address)
+            .eq('starknet_address', account.address)
             .single();
+
+          // Auto-register if missing (can happen on eager connection)
+          if (fetchErr && fetchErr.code === 'PGRST116') {
+             console.log("🆕 Auto-registering user in Supabase before swipe...");
+             const { data: newUser, error: insertErr } = await supabase
+                 .from('users')
+                 .insert({ starknet_address: account.address })
+                 .select('id')
+                 .single();
+             if (insertErr) throw insertErr;
+             user = newUser;
+          } else if (fetchErr) {
+             throw fetchErr;
+          }
 
           if (user) {
             console.log("🌉 Bridging Starknet TX to Supabase...");
@@ -348,18 +335,47 @@ export function useVault() {
 
             if (bridgeErr) throw bridgeErr;
             console.log("✅ Bridge successful. Swipe ID:", swipe.id);
-            
-            // We return both result and the new swipe ID for the frontend to track
-            return { ...result, swipeId: swipe.id };
+            finalSwipeId = swipe.id;
           }
         } catch (dbErr) {
           console.error("❌ Protocol Bridge Failure:", dbErr);
-          // Don't throw here, the L2 TX is already in flight. 
-          // Just the UI tracking might be degraded.
         }
       }
 
-      return result;
+      // 3. Transaction Monitor (CORS-Safe L2 Watcher)
+      // This now runs asynchronously so the UI can proceed immediately!
+      const monitorStatus = async () => {
+        let attempts = 0;
+        const maxAttempts = 30; 
+        
+        while (attempts < maxAttempts) {
+          try {
+            if (!activeWallet || !activeWallet.provider) break;
+
+            const receipt: any = await activeWallet.provider.getTransactionReceipt(result.transaction_hash);
+            const status = receipt.status || receipt.finality_status;
+            
+            if (status === 'REJECTED' || status === 'REVERTED') {
+              console.error("❌ Transaction failed on-chain:", status);
+              // Optimally we'd update Supabase here to FAILED
+              return;
+            }
+            if (status === 'ACCEPTED_ON_L2' || status === 'ACCEPTED_ON_L1') {
+              console.log("✅ Transaction finalized on L2");
+              return;
+            }
+          } catch (e) {}
+          await new Promise(r => setTimeout(r, 10000));
+          attempts++;
+        }
+      };
+      
+      // Fire and forget the monitor
+      monitorStatus(); 
+      setTimeout(() => refreshBalance(account.address), 5000);
+
+      // Return immediately so the UI Progress Bar starts ticking!
+      return { ...result, swipeId: finalSwipeId };
     } catch (err) {
       console.error("Request swipe failed:", err);
       throw err;
