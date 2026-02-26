@@ -14,18 +14,31 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env from monorepo root (3 levels up from src/)
-dotenv.config({ path: resolve(__dirname, '..', '..', '..', '.env') });
+// Load .env from monorepo root (if exists)
+const envPath = resolve(__dirname, '..', '..', '..', '.env');
+dotenv.config({ path: envPath });
 
 // ── Validation ──────────────────────────────────────────
+// In production (Dewacloud), we rely on system environment variables, 
+// so we don't crash if the .env file itself is missing, as long as the vars exist.
 function requireEnv(key: string): string {
   const val = process.env[key];
-  if (!val) {
-    console.error(`❌ Missing required env var: ${key}`);
-    console.error('   Copy .env.example → .env and fill in all values.');
-    process.exit(1);
+  if (val) return val;
+
+  // Try common variations (with/without NEXT_PUBLIC_)
+  const alternativeKey = key.startsWith('NEXT_PUBLIC_') 
+    ? key.replace('NEXT_PUBLIC_', '') 
+    : `NEXT_PUBLIC_${key}`;
+  
+  const altVal = process.env[alternativeKey];
+  if (altVal) {
+    console.log(`ℹ️  Using environment variable fallback: ${key} -> ${alternativeKey}`);
+    return altVal;
   }
-  return val;
+
+  console.error(`❌ Missing required env var: ${key} (and tried ${alternativeKey})`);
+  console.error('   In production: Set this in the Dewacloud "Variables" UI.');
+  process.exit(1);
 }
 
 // ── Exported Config ─────────────────────────────────────
