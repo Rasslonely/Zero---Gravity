@@ -1,0 +1,79 @@
+{
+  "contractName": "ShadowCard",
+  "constructorInputs": [
+    {
+      "name": "oraclePubKey",
+      "type": "pubkey"
+    },
+    {
+      "name": "ownerPubKey",
+      "type": "pubkey"
+    }
+  ],
+  "abi": [
+    {
+      "name": "swipe",
+      "inputs": [
+        {
+          "name": "oracleSig",
+          "type": "datasig"
+        },
+        {
+          "name": "oracleMessage",
+          "type": "bytes"
+        },
+        {
+          "name": "userSig",
+          "type": "sig"
+        },
+        {
+          "name": "userPubKey",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "inputs": [
+        {
+          "name": "ownerSig",
+          "type": "sig"
+        }
+      ]
+    }
+  ],
+  "bytecode": "OP_2 OP_PICK OP_0 OP_NUMEQUAL OP_IF OP_3 OP_ROLL OP_4 OP_PICK OP_ROT OP_CHECKDATASIGVERIFY OP_3 OP_ROLL OP_4 OP_ROLL OP_CHECKSIGVERIFY OP_2 OP_PICK 14 OP_SPLIT OP_DROP OP_3 OP_ROLL 14 OP_SPLIT OP_NIP OP_8 OP_SPLIT OP_DROP OP_BIN2NUM OP_0 OP_OUTPUTBYTECODE 76a914 OP_3 OP_ROLL OP_CAT 88ac OP_CAT OP_EQUALVERIFY OP_0 OP_OUTPUTVALUE OP_LESSTHANOREQUAL OP_NIP OP_NIP OP_ELSE OP_ROT OP_1 OP_NUMEQUALVERIFY OP_ROT OP_ROT OP_CHECKSIG OP_NIP OP_ENDIF",
+  "source": "/**\n * ═══════════════════════════════════════════════════════\n * ZERO-GRAVITY: ShadowCard Covenant (CashScript)\n * ═══════════════════════════════════════════════════════\n *\n * The Shadow Covenant holds BCH liquidity and releases it\n * when presented with a valid Oracle attestation (checkDataSig)\n * and user authorization (checkSig).\n *\n * Security invariants:\n *   1. Only the Oracle can authorise a swipe (datasig verification).\n *   2. Output recipient + amount are bound to the oracle message (no tampering).\n *   3. LP owner can always reclaim remaining liquidity via withdraw().\n *\n * Oracle message format (36 bytes, little-endian):\n *   Bytes  0–19:  recipientHash  (HASH160 of recipient pubkey)\n *   Bytes 20–27:  amountSats     (uint64 LE)\n *   Bytes 28–35:  nonce          (uint64 LE — replay prevention)\n */\n\npragma cashscript ^0.12.0;\n\ncontract ShadowCard(pubkey oraclePubKey, pubkey ownerPubKey) {\n\n    /**\n     * swipe() — Release BCH to a recipient when Oracle attests solvency.\n     *\n     * The Oracle signs a message containing the recipient's public key hash,\n     * the exact amount in satoshis, and a nonce. The covenant verifies the\n     * signature and enforces that the first output pays the correct recipient\n     * the correct amount.\n     *\n     * @param oracleSig    Schnorr signature from the Oracle over oracleMessage\n     * @param oracleMessage Packed bytes: <recipientHash:20><amountSats:8><nonce:8>\n     * @param userSig      Signature from the swipe initiator\n     * @param userPubKey   Public key of the swipe initiator\n     */\n    function swipe(datasig oracleSig, bytes oracleMessage, sig userSig, pubkey userPubKey) {\n        // 1. Verify Oracle attestation — the Oracle has approved this exact swipe\n        require(checkDataSig(oracleSig, oracleMessage, oraclePubKey));\n\n        // 2. Verify user authorization — prevents unauthorized use of oracle sigs\n        require(checkSig(userSig, userPubKey));\n\n        // 3. Parse recipient + amount from oracle message\n        //    Critical: These byte splits must match Oracle signer packing order\n        bytes20 recipientHash = bytes20(oracleMessage.split(20)[0]);\n        bytes8 amountBytes = bytes8(oracleMessage.split(20)[1].split(8)[0]);\n        int amount = int(amountBytes);\n\n        // 4. Enforce output constraints:\n        //    - Output[0] must pay to the correct P2PKH recipient\n        //    - Output[0] must carry at least the attested amount\n        require(tx.outputs[0].lockingBytecode == new LockingBytecodeP2PKH(recipientHash));\n        require(tx.outputs[0].value >= amount);\n    }\n\n    /**\n     * withdraw() — LP owner reclaims remaining liquidity.\n     *\n     * Only the ownerPubKey holder can withdraw. This is used when\n     * the liquidity provider wants to exit or rebalance.\n     *\n     * @param ownerSig  Signature from the LP owner\n     */\n    function withdraw(sig ownerSig) {\n        require(checkSig(ownerSig, ownerPubKey));\n    }\n}\n",
+  "debug": {
+    "bytecode": "5279009c63537a54797bbb537a547aad527901147f75537a01147f77587f758100cd0376a914537a7e0288ac7e8800cca17777677b519d7b7bac7768",
+    "sourceMap": "38:4:56:5;;;;;40:29:40:38;;:40::53;;:55::67;:8::70:1;43:25:43:32:0;;:34::44;;:8::47:1;47:40:47:53:0;;:60::62;:40::63:1;:::66;48:36:48:49:0;;:56::58;:36::59:1;:::62;:69::70:0;:36::71:1;:::74;49:21:49:37;54:27:54:28:0;:16::45:1;:49::88:0;:74::87;;:49::88:1;;;:8::90;55:27:55:28:0;:16::35:1;:8::47;38:4:56:5;;;66::68::0;;;67:25:67:33;:35::46;:8::49:1;66:4:68:5;23:0:69:1",
+    "logs": [],
+    "requires": [
+      {
+        "ip": 12,
+        "line": 40
+      },
+      {
+        "ip": 17,
+        "line": 43
+      },
+      {
+        "ip": 40,
+        "line": 54
+      },
+      {
+        "ip": 44,
+        "line": 55
+      },
+      {
+        "ip": 53,
+        "line": 67
+      }
+    ]
+  },
+  "compiler": {
+    "name": "cashc",
+    "version": "0.12.1"
+  },
+  "updatedAt": "2026-02-16T20:31:05.063Z"
+}

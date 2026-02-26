@@ -27,7 +27,7 @@ dist/
 target/
 
 # ── CashScript Artifacts ──
-packages/contracts-bch/artifacts/
+# packages/contracts-bch/artifacts/ (Unignored for Cloud Deployment)
 
 # ── OS Files ──
 .DS_Store
